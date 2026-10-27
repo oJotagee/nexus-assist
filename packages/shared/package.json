@@ -1,0 +1,19 @@
+{
+  "name": "@nexo/shared",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tickets": "./src/tickets/index.ts",
+    "./sla": "./src/sla/index.ts",
+    "./seed": "./src/seed/index.ts",
+    "./http": "./src/http/index.ts"
+  },
+  "scripts": {
+    "test": "bun test tests/unit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.17"
+  }
+}

@@ -1,0 +1,43 @@
+# Ignore Visual Studio Code workspace settings
+.vscode/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment files
+.env
+!.env.example
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+
+# Generated prisma client
+generated/
+
+# playwright
+/tests/e2e/.auth/
+/tests/e2e/.results/
+/tests/e2e/.report/
+# Local
+*.tsbuildinfo
+.next/

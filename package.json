@@ -1,0 +1,29 @@
+{
+  "name": "nexo-assist",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc -p packages/shared --noEmit && tsc -p services/tickets --noEmit",
+    "test:unit": "bun test packages/shared/tests/unit && bun run --cwd services/tickets test",
+    "test:integration:tickets": "bun run --cwd services/tickets test:integration",
+    "dev:tickets": "bun run --cwd services/tickets dev",
+    "db:setup": "bun run --cwd services/tickets prisma:generate && bun run --cwd services/tickets db:setup",
+    "db:seed": "bun run --cwd services/tickets db:seed",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:dev:up": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:dev:prune": "docker compose -f docker-compose.dev.yml down -v --remove-orphans"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.2",
+    "bun-types": "1.4.2",
+    "typescript": "^5.9.3"
+  }
+}
