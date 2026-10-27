@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Os enums espelham @nexo/shared/tickets.
+
+enum TicketType {
+  INC
+  REQ
+}
+
+enum TicketCategory {
+  ACCESS
+  NETWORK_VPN
+  HARDWARE
+  SOFTWARE
+  EMAIL
+  OTHER
+}
+
+enum TicketPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ANALYST
+  WAITING_REQUESTER
+  APPROVED
+  RESOLVED
+  CLOSED
+}
+
+enum TicketImpact {
+  SELF
+  TEAM
+  COMPANY
+}
+
+enum TicketUpdateAuthor {
+  REQUESTER
+  AGENT
+  ANALYST
+  SYSTEM
+}
+
+enum TicketUpdateKind {
+  CREATED
+  COMMENT
+  STATUS_CHANGED
+  REOPENED
+  TRANSFERRED
+}
+
+model Ticket {
+  // INC-20311 / REQ-10442
+  id          String         @id
+  type        TicketType
+  title       String
+  description String
+  category    TicketCategory
+  priority    TicketPriority
+  impact      TicketImpact
+  status      TicketStatus
+
+  requesterId   String
+  assignedGroup String?
+  assigneeName  String?
+
+  createdAt    DateTime  @default(now())
+  lastUpdateAt DateTime
+  resolvedAt   DateTime?
+
+  updates TicketUpdate[]
+
+  @@index([requesterId, status])
+}
+
+model TicketUpdate {
+  id         String             @id @default(cuid())
+  ticketId   String
+  ticket     Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  kind       TicketUpdateKind
+  author     TicketUpdateAuthor
+  authorName String?
+  body       String
+  createdAt  DateTime           @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+// Próximo número por tipo; incrementado de forma atômica ao criar um chamado.
+model TicketSequence {
+  type TicketType @id
+  next Int
+}
+
+// Respostas de escritas já processadas, por Idempotency-Key. Permite ao assist
+// repetir com segurança uma escrita que falhou no meio do caminho.
+model IdempotencyRecord {
+  key         String   @id
+  requestHash String
+  statusCode  Int
+  response    Json
+  createdAt   DateTime @default(now())
+}

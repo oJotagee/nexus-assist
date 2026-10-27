@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "paths": {
+      "@generated/*": ["./generated/*"],
+      "@/*": ["./src/*"],
+      "@tests/*": ["./tests/*"]
+    }
+  },
+  "include": ["src/**/*", "generated/**/*", "prisma/**/*", "prisma.config.ts", "tests/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
