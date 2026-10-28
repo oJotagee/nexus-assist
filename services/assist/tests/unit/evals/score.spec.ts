@@ -4,8 +4,6 @@ import type { AgentTurnResult } from '@/application/ports/agent.port';
 import type { EvalScenario } from '@tests/evals/scenarios';
 import { CRITERIA, scoreScenario, summarizeByCriterion } from '@tests/evals/score';
 
-// A régua dos evals também precisa de teste: um eval que aprova tudo não mede nada.
-
 function result(overrides: Partial<AgentTurnResult> = {}): AgentTurnResult {
   return {
     text: 'De segunda a sexta, das 8h às 18h.',

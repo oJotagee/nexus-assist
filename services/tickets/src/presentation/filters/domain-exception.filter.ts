@@ -35,7 +35,6 @@ const STATUS_BY_ERROR = new Map<ErrorClass, HttpStatus>([
   [TicketClosedError, HttpStatus.CONFLICT],
   [TicketCannotBeReopenedError, HttpStatus.CONFLICT],
   [IdempotencyKeyReuseError, HttpStatus.UNPROCESSABLE_ENTITY],
-  // 503: o assist trata como instabilidade e repete com a mesma chave.
   [IdempotencyRequestInProgressError, HttpStatus.SERVICE_UNAVAILABLE],
 ]);
 

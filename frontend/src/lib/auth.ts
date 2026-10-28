@@ -55,8 +55,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.role = token.role as UserDto['role'];
       session.user.department = token.department as string;
       session.user.supportLevel = (token.supportLevel ?? null) as UserDto['supportLevel'];
-      // O accessToken não vai para a sessão do cliente: só o servidor (actions e
-      // data-access) o lê do cookie, via getAccessToken.
       return session;
     },
   },

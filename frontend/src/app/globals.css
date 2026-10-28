@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Tokens do design-system/MASTER.md (Nexo Assist, tema claro). */
-
 @theme inline {
   --font-sans: var(--font-inter);
   --font-serif: var(--font-newsreader);

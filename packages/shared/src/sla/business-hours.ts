@@ -1,7 +1,3 @@
-// Expediente do service desk: segunda a sexta, das 8h às 18h, horário de Brasília.
-// O Brasil não tem horário de verão desde 2019, então um offset fixo de -03:00 basta
-// e evita depender do fuso da máquina onde o serviço roda. Feriados ficam de fora.
-
 const SAO_PAULO_OFFSET_MS = -3 * 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
 
@@ -9,7 +5,6 @@ export const BUSINESS_DAY_START_HOUR = 8;
 export const BUSINESS_DAY_END_HOUR = 18;
 export const BUSINESS_MINUTES_PER_DAY = (BUSINESS_DAY_END_HOUR - BUSINESS_DAY_START_HOUR) * 60;
 
-// Datas "locais" são Dates cujos campos UTC representam o relógio de Brasília.
 function toLocal(date: Date): Date {
   return new Date(date.getTime() + SAO_PAULO_OFFSET_MS);
 }

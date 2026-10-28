@@ -124,7 +124,6 @@ export function useAgentStream(conversationId: string) {
       } catch (caught) {
         if (controller.signal.aborted) return false;
         const code = (caught as { code?: string | null }).code ?? null;
-        // Sessão expirada: volta para o login em vez de mostrar erro.
         if (code === 'Unauthorized') {
           window.location.assign('/login');
           return false;
@@ -132,7 +131,6 @@ export function useAgentStream(conversationId: string) {
         setError({
           message: caught instanceof Error ? caught.message : 'Não foi possível enviar a mensagem.',
           code,
-          // Se a mensagem nem chegou ao servidor, devolve o texto para o funcionário tentar de novo.
           failedText: delivered ? null : text,
         });
         await queryClient.invalidateQueries({ queryKey: CONVERSATION_QUERY_KEY });

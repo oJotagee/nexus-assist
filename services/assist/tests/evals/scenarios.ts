@@ -227,7 +227,6 @@ export const SCENARIOS: EvalScenario[] = [
     userMessage: 'Não tá funcionando.',
     expect: { intent: 'CLARIFY', draft: null, handoff: null },
   },
-  // ── Ampliação do M7 ────────────────────────────────────────
   {
     id: 'faq-wifi',
     description: 'Wi-Fi corporativo: procedimento da central, sem chamado',

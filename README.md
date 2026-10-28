@@ -2,8 +2,7 @@
 
 Agent de atendimento do service desk de TI da Nexo. O funcionário descreve o problema num chat e o agent decide, a cada mensagem, se **responde uma dúvida**, **consulta ou complementa um chamado**, **abre um chamado novo** ou **chama um analista**. Do outro lado, o analista tem um console para assumir conversas, com o agent pausado, e devolvê-las ou encerrá-las.
 
-- PRD: [`docs/PRD.md`](docs/PRD.md) · desafio original: [`docs/Desafio_Tecnico_Nexo_Assist_PRD_v5.pdf`](docs/Desafio_Tecnico_Nexo_Assist_PRD_v5.pdf)
-- Protótipo de referência: [`docs/prototype/`](docs/prototype) · design system: [`design-system/MASTER.md`](design-system/MASTER.md)
+Construído a partir do PRD do desafio da Beyond the Bytes e das telas do protótipo (Anexo C).
 
 ## Como rodar
 
@@ -89,7 +88,7 @@ Algumas escolhas deliberadas:
 - **A régua dos evals também é testada** (`tests/unit/evals/score.spec.ts`). A pontuação é objetiva (intenção, ferramentas, rascunho, transferência e texto) e sem LLM-juiz, para ser reprodutível.
 - **Testes que pegam regressão de verdade:** quebrei a checagem de dono do chamado de propósito e os testes de privacidade falharam.
 - **O teste de integração achou um bug real:** dois cliques simultâneos em "Confirmar" criavam dois chamados, porque a idempotency key só era gravada depois da escrita. Agora a chave é reservada antes. A segunda requisição espera e repete a resposta da primeira, e o rascunho é confirmado com update condicional.
-- **Status dos evals:** a suíte está pronta, mas não rodou contra o modelo real no desenvolvimento por falta de chave. Para medir, configure a chave gratuita do Gemini e rode `bun run eval --report` (com `--only` para rodar em partes se a cota diária do plano gratuito acabar). O relatório vai para `docs/evals/`.
+- **Status dos evals:** a suíte está pronta, mas não rodou contra o modelo real no desenvolvimento por falta de chave. Para medir, configure a chave gratuita do Gemini e rode `bun run eval --report` (com `--only` para rodar em partes se a cota diária do plano gratuito acabar). O relatório vai para `services/assist/tests/evals/reports/`.
 
 ## Segurança e privacidade
 
@@ -136,7 +135,6 @@ services/assist/   src/{domain, application, infrastructure/agent, presentation}
 services/tickets/  src/{domain, application, infrastructure, presentation} · tests/{unit, integration}
 packages/shared/   tickets, sla, assist (contratos), seed (funcionários)
 scripts/           setup.ts, dev.ts
-docs/              PRD, desafio, protótipo, relatórios de eval
 ```
 
 ## Comandos úteis

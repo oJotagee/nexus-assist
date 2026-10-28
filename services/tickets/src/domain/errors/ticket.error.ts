@@ -5,8 +5,6 @@ export class InvalidTicketError extends Error {
   }
 }
 
-// Também é usado quando o chamado existe mas é de outra pessoa: não confirmar a
-// existência de chamados alheios faz parte da regra de privacidade.
 export class TicketNotFoundError extends Error {
   constructor(id: string) {
     super(`Chamado ${id} não encontrado.`);

@@ -1,6 +1,3 @@
-// Funcionários de exemplo (Anexo B). Os ids são fixos e compartilhados: o assist usa
-// para login e conversas, e o serviço de chamados usa como requesterId.
-
 export type SeedEmployee = {
   id: string;
   name: string;

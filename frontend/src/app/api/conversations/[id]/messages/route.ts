@@ -35,7 +35,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
   }
 
-  // Erros de validação (400) e auth chegam como JSON, antes do stream abrir.
   if (!upstream.ok || !upstream.body) {
     return new Response(await upstream.text(), {
       status: upstream.status,

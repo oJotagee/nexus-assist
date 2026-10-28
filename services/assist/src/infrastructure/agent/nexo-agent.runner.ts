@@ -69,8 +69,6 @@ export class NexoAgentRunner implements AgentRunner {
       instructions: {
         role: 'system',
         content: SYSTEM_PROMPT,
-        // Ferramentas + prompt de sistema são estáveis: na Anthropic, cache explícito; no Gemini,
-        // o cache implícito aproveita o mesmo prefixo (a opção abaixo é ignorada por ele).
         providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
       },
       model: this.model.languageModel,

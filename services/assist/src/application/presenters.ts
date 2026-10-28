@@ -86,7 +86,6 @@ export function toMessageDto(
           intent: trace.intent,
           action: trace.action,
           confidence: { score: trace.confidenceScore, band: trace.confidenceBand },
-          // O trail da UI só precisa do rótulo e do status de cada passo.
           steps: trace.steps.map(({ input: _input, outputSummary: _summary, ...step }) => step),
         }
       : null,

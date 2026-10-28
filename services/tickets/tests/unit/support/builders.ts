@@ -1,6 +1,5 @@
 import { TicketEntity } from '@/domain/entities/ticket.entity';
 
-// 27/10/2026, terça-feira, 10h em Brasília.
 export const at = (iso: string) => new Date(`${iso}-03:00`);
 export const NOW = at('2026-10-27T10:00:00');
 

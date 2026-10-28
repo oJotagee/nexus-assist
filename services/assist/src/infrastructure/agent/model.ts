@@ -58,7 +58,6 @@ export function createAgentModel(env: AgentModelEnv): AgentModel | null {
     return {
       id,
       provider,
-      // O Mastra embute a própria cópia dos tipos do AI SDK; o contrato em runtime é o mesmo.
       languageModel: google(id) as unknown as AgentModel['languageModel'],
       maxOutputTokens: 2048,
       providerOptions: { google: { thinkingConfig: { thinkingLevel: 'low' } } },

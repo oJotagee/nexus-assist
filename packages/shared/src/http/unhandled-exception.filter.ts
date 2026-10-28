@@ -30,7 +30,6 @@ export class UnhandledExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    // 503 é esperado (sistema legado instável): devolve o corpo como veio, sem logar stack.
     if (exception instanceof HttpException && exception.getStatus() === 503) {
       response.status(503).json(exception.getResponse());
       return;

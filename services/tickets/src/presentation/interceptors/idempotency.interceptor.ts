@@ -108,7 +108,6 @@ export class IdempotencyInterceptor implements NestInterceptor {
       current = await this.store.find(key);
     }
 
-    // A primeira falhou e liberou a chave: o cliente deve tentar de novo.
     if (!current) throw new IdempotencyRequestInProgressError();
 
     return current;

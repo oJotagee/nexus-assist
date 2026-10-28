@@ -5,9 +5,6 @@ import {
   formatDueAt,
 } from '@nexo/shared';
 
-// O prompt de sistema é estático (vai para o cache de prompt). Tudo que muda por turno
-// — funcionário, data/hora, rascunho pendente — entra numa mensagem de contexto separada.
-
 export const SYSTEM_PROMPT = `Você é o Nexo Assist, o assistente do service desk de TI da Nexo (cerca de 2.000 funcionários). Você conversa com um funcionário que descreve um problema ou pedido de TI com as próprias palavras e decide, a cada mensagem, o que fazer: responder uma dúvida, consultar ou complementar um chamado dele, abrir um chamado novo ou chamar um analista.
 
 # Como decidir

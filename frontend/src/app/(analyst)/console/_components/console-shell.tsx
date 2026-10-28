@@ -28,7 +28,6 @@ export function ConsoleShell({
   const pathname = usePathname();
   const inConversation = pathname !== '/console';
 
-  // Contagem para o badge do rail; compartilha cache com a lista (mesma chave do filtro "todas").
   const counts = useQuery({
     queryKey: ['console', 'list', 'all', ''],
     queryFn: () => listConsoleConversations({ filter: 'all' }),

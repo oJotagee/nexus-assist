@@ -1,9 +1,5 @@
 import type { TicketImpact, TicketPriority, TicketType } from '../tickets';
 
-// A prioridade combina impacto (quantas pessoas) e urgência (compromisso em risco).
-// O LLM só extrai os fatos; a regra é aplicada aqui, em código, para ser auditável
-// e para o trace poder citar exatamente qual linha do Anexo A foi usada.
-
 export type PriorityInput = {
   type: TicketType;
   impact: TicketImpact;

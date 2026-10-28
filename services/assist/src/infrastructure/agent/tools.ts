@@ -268,7 +268,6 @@ export function createAgentTools(ctx: TurnContext) {
       }
 
       if (target && !(state.ticketCache ?? []).some((ticket) => ticket.id === target.ticketId)) {
-        // Garante que o destino é mesmo do funcionário antes de montar o rascunho.
         try {
           await deps.tickets.get(employeeId, target.ticketId);
         } catch (error) {

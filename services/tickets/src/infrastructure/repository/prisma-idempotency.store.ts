@@ -14,7 +14,6 @@ export class PrismaIdempotencyStore implements IdempotencyStore {
 
   async claim(key: string, requestHash: string): Promise<ClaimResult> {
     try {
-      // A chave primária garante que só uma requisição consegue inserir.
       await this.prisma.idempotencyRecord.create({ data: { key, requestHash } });
       return { claimed: true };
     } catch (error) {
@@ -22,7 +21,7 @@ export class PrismaIdempotencyStore implements IdempotencyStore {
         throw error;
       }
       const existing = await this.find(key);
-      if (!existing) return this.claim(key, requestHash); // liberada entre o insert e o find
+      if (!existing) return this.claim(key, requestHash);
       return { claimed: false, existing };
     }
   }

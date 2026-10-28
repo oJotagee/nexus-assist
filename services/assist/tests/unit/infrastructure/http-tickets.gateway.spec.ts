@@ -7,7 +7,6 @@ import {
 } from '@/domain/errors/domain.error';
 import { HttpTicketsGateway } from '@/infrastructure/http/http-tickets.gateway';
 
-// Servidor HTTP real que imita o legado: responde 503 nas N primeiras tentativas.
 describe('HttpTicketsGateway', () => {
   let server: ReturnType<typeof Bun.serve>;
   let failuresLeft = 0;

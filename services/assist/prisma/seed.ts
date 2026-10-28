@@ -15,7 +15,6 @@ const now = Date.now();
 const ago = ({ days = 0, hours = 0, minutes = 0 }) =>
   new Date(now - ((days * 24 + hours) * 60 + minutes) * 60 * 1000);
 
-// ── Central de ajuda (Anexo B: 5 a 10 artigos curtos) ─────────
 const ARTICLES = [
   {
     id: 'kb-vpn-809',
@@ -75,7 +74,6 @@ const ARTICLES = [
   },
 ];
 
-// ── Conversas de demonstração para o console ────────────────
 type SeedMessage = {
   author: MessageAuthor;
   text: string;
@@ -391,7 +389,6 @@ async function main(): Promise<void> {
               authorName: message.authorName ?? null,
               text: message.text,
               blocks: (message.blocks ?? []) as Prisma.InputJsonValue,
-              // +1 ms por posição: mensagens do mesmo minuto mantêm a ordem do roteiro.
               createdAt: new Date(message.at.getTime() + position),
               ...(message.trace ? { trace: { create: traceData(message.trace) } } : {}),
             },

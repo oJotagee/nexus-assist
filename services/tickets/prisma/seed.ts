@@ -19,8 +19,6 @@ import {
   type TicketUpdateKind,
 } from '../generated/prisma/client';
 
-// Datas relativas ao momento do seed, para os cenários (vencido, reabrível...)
-// continuarem valendo em qualquer dia em que o projeto for rodado.
 const now = Date.now();
 const ago = ({ days = 0, hours = 0, minutes = 0 }) =>
   new Date(now - ((days * 24 + hours) * 60 + minutes) * 60 * 1000);
@@ -58,7 +56,6 @@ const created = (at: Date): SeedUpdate => ({
 });
 
 const TICKETS: SeedTicket[] = [
-  // ── Ana Souza ───────────────────────────────────────────────
   {
     id: 'INC-20311',
     type: 'INC',
@@ -210,7 +207,6 @@ const TICKETS: SeedTicket[] = [
     ],
   },
 
-  // ── Outros funcionários (nunca podem aparecer para a Ana) ───
   {
     id: 'INC-20330',
     type: 'INC',
@@ -311,8 +307,6 @@ async function main(): Promise<void> {
   });
 
   try {
-    // No container o seed roda a cada start; com SEED_IF_EMPTY ele não apaga dados existentes,
-    // então conversas e chamados sobrevivem a um restart.
     if (process.env.SEED_IF_EMPTY === 'true' && (await prisma.ticketSequence.count()) > 0) {
       console.log('Banco já populado; seed ignorado.');
       return;

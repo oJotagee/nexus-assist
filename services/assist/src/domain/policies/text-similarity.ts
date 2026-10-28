@@ -1,6 +1,3 @@
-// Normalização e tokenização simples em português, usadas na busca da central de ajuda
-// e na detecção de chamados duplicados. Determinístico e auditável (vai para o trace).
-
 const STOPWORDS = new Set(
   'a o e de da do das dos em no na nos nas um uma uns umas para por com sem que se ao aos à às meu minha meus minhas seu sua seus suas é está estou não mais muito pra pro como ou mas desde já foi ser ter tem tá isso esse essa este esta quando onde qual quero preciso consigo'.split(
     ' ',

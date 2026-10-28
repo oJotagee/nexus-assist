@@ -47,7 +47,6 @@ export function ChatView({
     queryKey: CONVERSATION_QUERY_KEY,
     queryFn: getActiveConversation,
     initialData: initialConversation,
-    // Com analista (ou esperando um), busca as mensagens dele periodicamente.
     refetchInterval: (query) =>
       query.state.data && query.state.data.state !== 'AGENT' && query.state.data.state !== 'CLOSED'
         ? POLLING_WITH_ANALYST_MS

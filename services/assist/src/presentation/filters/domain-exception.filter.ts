@@ -50,7 +50,6 @@ export class DomainExceptionFilter implements ExceptionFilter {
       STATUS_BY_ERROR.get(exception.constructor as ErrorClass) ?? HttpStatus.BAD_REQUEST;
     const response = host.switchToHttp().getResponse<OutgoingResponse>();
 
-    // No stream SSE os erros viram eventos; aqui só chegam os que acontecem antes dele abrir.
     if (response.headersSent) return;
 
     response

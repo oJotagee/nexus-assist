@@ -28,8 +28,6 @@ import { InternalApiSecretGuard } from '../guards/internal-api-secret.guard';
 import { IdempotencyInterceptor } from '../interceptors/idempotency.interceptor';
 import { LegacyInstabilityInterceptor } from '../interceptors/legacy-instability.interceptor';
 
-// Toda rota é escopada pelo funcionário: não existe "buscar chamado por id" solto.
-// Assim um funcionário nunca recebe chamado de outro, mesmo se o agent errar o id.
 @ApiTags('internal')
 @ApiHeader({ name: 'X-Internal-Secret', required: true })
 @Controller('internal/employees/:employeeId/tickets')

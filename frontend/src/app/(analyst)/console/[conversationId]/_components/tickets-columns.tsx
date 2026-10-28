@@ -28,7 +28,6 @@ export const ticketTableFeatures = tableFeatures({
 
 const helper = createColumnHelper<typeof ticketTableFeatures, TicketSummaryDto>();
 
-// Ordena prioridade e status pela gravidade, não pelo texto.
 const byRank =
   (order: readonly string[]) =>
   (

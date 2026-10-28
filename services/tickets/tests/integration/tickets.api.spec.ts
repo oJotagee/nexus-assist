@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { config } from 'dotenv';
 
 config({ path: `${import.meta.dir}/../../.env` });
-// Os testes validam o comportamento; a instabilidade tem teste unitário próprio.
 process.env.TICKETS_FAILURE_RATE = '0';
 process.env.TICKETS_MAX_LATENCY_MS = '0';
 
@@ -15,7 +14,6 @@ import { configureApp } from '@/app.setup';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 
 describe('Tickets API (integration)', () => {
-  // Funcionários exclusivos do teste, para não tocar nos dados do seed.
   const owner = `emp_it_${crypto.randomUUID().slice(0, 8)}`;
   const stranger = `emp_it_${crypto.randomUUID().slice(0, 8)}`;
   let app: INestApplication;

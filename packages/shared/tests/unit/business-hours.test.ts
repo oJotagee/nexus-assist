@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test';
 
 import { addBusinessMinutes, isBusinessTime } from '../../src/sla';
 
-// 27/10/2026 é uma terça-feira. Todas as datas em horário de Brasília.
 const at = (iso: string) => new Date(`${iso}-03:00`);
 
 describe('addBusinessMinutes', () => {

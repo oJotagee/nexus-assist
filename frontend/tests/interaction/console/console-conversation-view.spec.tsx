@@ -58,7 +58,6 @@ describe('ConsoleConversationView', () => {
     expect(screen.getByText('Resumo da transferência')).toBeInTheDocument();
     expect(screen.getByText(/INC-20311 vencido há 6 dias/)).toBeInTheDocument();
     expect(screen.getByText('Ana espera um atendente')).toBeInTheDocument();
-    // Sem assumir, o analista não tem campo de resposta.
     expect(screen.queryByLabelText(/Mensagem para Ana/)).not.toBeInTheDocument();
   });
 
@@ -68,7 +67,6 @@ describe('ConsoleConversationView', () => {
       assignedAnalyst: { id: 'emp_rafael', name: 'Rafael Lima', supportLevel: 'N2' },
     });
     changeConversationState.mockImplementationOnce(async () => {
-      // Depois de assumir, o polling passa a ver a conversa assumida.
       getConsoleConversation.mockImplementation(async () => assumed);
       return { data: assumed };
     });
@@ -98,7 +96,6 @@ describe('ConsoleConversationView', () => {
       assignedAnalyst: { id: 'emp_rafael', name: 'Rafael Lima', supportLevel: 'N2' },
     });
     sendAnalystMessage.mockImplementationOnce(async () => ({ data: assumed }));
-    // O polling do React Query devolve o estado atual da conversa (já assumida).
     getConsoleConversation.mockImplementation(async () => assumed);
     const { user } = renderWithProviders(
       <ConsoleConversationView initialConversation={assumed} analystId="emp_rafael" />,

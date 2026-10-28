@@ -4,7 +4,7 @@
  *   bun run eval --model gemini-2.5-flash     # compara outro modelo do mesmo provedor
  *   bun run eval --provider anthropic         # usa a Anthropic (ANTHROPIC_API_KEY)
  *   bun run eval --only faq-horario,critico-empresa
- *   bun run eval --report                 # grava docs/evals/<data>-<modelo>.md
+ *   bun run eval --report                 # grava tests/evals/reports/<data>-<modelo>.md
  *
  * Cada cenário roda o NexoAgentRunner completo (Mastra + tools + regras em código) contra um
  * sistema de chamados em memória com os dados do Anexo B, e é pontuado de forma objetiva
@@ -176,7 +176,6 @@ async function runScenario(
     silent,
   );
 
-  // A transferência avaliada é a final: pedido do agent + política em código.
   const handoff = evaluateHandoff({
     intent: result.decision.intent,
     confidenceBand: result.decision.confidence.band,
@@ -284,7 +283,7 @@ async function main(): Promise<void> {
   console.log(`\n${summary}`);
 
   if (writeReport) {
-    const dir = `${import.meta.dir}/../../../../docs/evals`;
+    const dir = `${import.meta.dir}/reports`;
     await mkdir(dir, { recursive: true });
     const file = `${dir}/${new Date().toISOString().slice(0, 10)}-${model.id}.md`;
     await writeFile(file, report);

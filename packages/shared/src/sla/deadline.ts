@@ -6,15 +6,11 @@ import {
 } from '../tickets';
 import { BUSINESS_MINUTES_PER_DAY, addBusinessMinutes } from './business-hours';
 
-// O prazo vale para a primeira resposta e para cada atualização (Anexo A):
-// conta a partir da última atualização do chamado.
-
 type SlaRule =
   | { kind: 'calendar'; minutes: number; label: string }
   | { kind: 'business'; minutes: number; label: string };
 
 export const SLA_BY_PRIORITY: Record<TicketPriority, SlaRule> = {
-  // Críticos têm plantão 24h, então o relógio é corrido.
   CRITICAL: { kind: 'calendar', minutes: 60, label: '1 hora' },
   HIGH: { kind: 'business', minutes: 4 * 60, label: '4 horas úteis' },
   MEDIUM: { kind: 'business', minutes: 3 * BUSINESS_MINUTES_PER_DAY, label: '3 dias úteis' },

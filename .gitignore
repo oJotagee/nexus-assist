@@ -41,3 +41,6 @@ generated/
 # Local
 *.tsbuildinfo
 .next/
+
+docs/
+design-system/

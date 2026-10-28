@@ -116,7 +116,6 @@ export function AgentReply({
   onOpenDetails,
   handlers,
 }: AgentReplyProps) {
-  // Cards largos (rascunho, chamado, lista) saem da bolha para respirar, como no protótipo.
   const isWide = (block: MessageBlock) =>
     block.type === 'TICKET_CARD' || block.type === 'DRAFT' || block.type === 'TICKET_PICKER';
   const wide = blocks.filter(isWide);

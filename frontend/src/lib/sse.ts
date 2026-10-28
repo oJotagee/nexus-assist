@@ -41,9 +41,7 @@ export function parseSseChunk(buffer: string): { events: AgentStreamEvent[]; res
 
     try {
       events.push(JSON.parse(data) as AgentStreamEvent);
-    } catch {
-      // Evento malformado: ignora em vez de derrubar a conversa.
-    }
+    } catch {}
   }
 
   return { events, rest };

@@ -97,7 +97,6 @@ export class SendMessageUseCase {
     assertCanSend(session, agentWillReply);
     if (agentWillReply) await this.assertWithinBudget(employee.id);
 
-    // Histórico da sessão antes da mensagem nova (o agent recebe a nova separada).
     const history = await this.messages.listBySession(session.id);
     const previousTraces = await this.messages.findTraces(
       history.filter((message) => message.author === 'AGENT').map((message) => message.id),
@@ -314,7 +313,7 @@ export class SendMessageUseCase {
     if (this.dailyTokenBudget <= 0) return;
 
     const startOfDay = new Date(this.clock.now());
-    startOfDay.setUTCHours(3, 0, 0, 0); // 00h em Brasília
+    startOfDay.setUTCHours(3, 0, 0, 0);
     if (startOfDay > this.clock.now()) startOfDay.setUTCDate(startOfDay.getUTCDate() - 1);
 
     const spent = await this.messages.sumTokensSince(employeeId, startOfDay);

@@ -103,7 +103,6 @@ describe('NexoAgentRunner (Mastra com modelo roteirizado)', () => {
       declaredByModel: true,
     });
     expect(result.usage.inputTokens).toBeGreaterThan(0);
-    // Cada passo aparece ao vivo (RUNNING) e depois concluído.
     expect(events.steps.filter((step) => step.status === 'RUNNING')).toHaveLength(2);
   });
 
@@ -158,7 +157,6 @@ describe('NexoAgentRunner (Mastra com modelo roteirizado)', () => {
       'montou o rascunho',
     ]);
     expect(result.blocks).toEqual([{ type: 'DRAFT', draftId: result.draft?.id ?? '' }]);
-    // Nada foi gravado no sistema de chamados: só a confirmação grava.
     expect(
       repos.tickets.calls.some((call) => call.method === 'create' || call.method === 'addUpdate'),
     ).toBe(false);

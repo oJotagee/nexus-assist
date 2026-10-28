@@ -102,7 +102,6 @@ check(
   profile.status === 200 && profileHtml.includes('fabio.nunes@nexo.com.br'),
 );
 
-// O id vem no payload do RSC, com aspas escapadas (\"id\":\"...\").
 const conversationId = chatHtml.match(/\\?"id\\?":\\?"([a-z0-9-]{20,})\\?",\\?"state/)?.[1];
 check('id da conversa disponível na página', !!conversationId, conversationId ?? 'não encontrado');
 
@@ -187,7 +186,6 @@ if (anaConversation) {
   );
 }
 
-// Rate limit das mensagens ao agent (por funcionário).
 await login('gabriela.rocha@nexo.com.br');
 const gabiHtml = await (await request('/atendimento')).text();
 const gabiConversation = gabiHtml.match(/\\?"id\\?":\\?"([a-z0-9-]{20,})\\?",\\?"state/)?.[1];

@@ -1,5 +1,3 @@
-// Formatação de prazos em horário de Brasília, usada no texto do agent e na UI.
-
 const TIME_ZONE = 'America/Sao_Paulo';
 
 const dayKey = new Intl.DateTimeFormat('en-CA', {

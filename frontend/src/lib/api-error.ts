@@ -19,7 +19,6 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
   const body = data as { error?: unknown; message?: unknown } | undefined;
   const isDomainError = typeof body?.error === 'string' && body.error.endsWith('Error');
 
-  // 503 do sistema de chamados é um erro de domínio com mensagem útil ("instável agora").
   if (status >= 500 && !isDomainError) return fallback;
 
   return isDomainError && typeof body?.message === 'string' && body.message.trim()

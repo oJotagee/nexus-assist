@@ -53,7 +53,6 @@ export class TurnRecorder {
         input,
         outputSummary: message,
       });
-      // Devolve o erro ao modelo para ele explicar ao funcionário, em vez de derrubar o turno.
       return { error: message };
     }
   }
@@ -73,7 +72,6 @@ export class TurnRecorder {
   }
 
   block(block: MessageBlock): void {
-    // Um bloco de cada tipo por resposta; o mais recente vence (ex.: rascunho refeito).
     const index = this.blocks.findIndex((existing) => existing.type === block.type);
     if (index >= 0) this.blocks.splice(index, 1, block);
     else this.blocks.push(block);

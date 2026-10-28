@@ -1,6 +1,3 @@
-// Erros de domínio do assist. O DomainExceptionFilter traduz cada um para um status HTTP
-// e o frontend mostra a `message` (formato { error, message } do booktattoo).
-
 export class InvalidCredentialsError extends Error {
   constructor() {
     super('Não encontramos esse e-mail corporativo.');
@@ -79,8 +76,6 @@ export class DailyBudgetExceededError extends Error {
     this.name = 'DailyBudgetExceededError';
   }
 }
-
-// ── Sistema de chamados (legado) ─────────────────────────────
 
 export class TicketsUnavailableError extends Error {
   constructor() {

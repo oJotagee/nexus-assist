@@ -42,7 +42,6 @@ export class PrismaTicketRepository implements TicketRepository {
   }
 
   async nextId(type: TicketType): Promise<string> {
-    // UPDATE ... RETURNING é atômico: duas criações simultâneas nunca recebem o mesmo número.
     const sequence = await this.prisma.ticketSequence.update({
       where: { type },
       data: { next: { increment: 1 } },

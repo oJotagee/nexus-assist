@@ -196,7 +196,6 @@ describe('IdempotencyInterceptor', () => {
     const store = new InMemoryIdempotencyStore();
     const interceptor = new IdempotencyInterceptor(store, 150);
     const headers = { 'idempotency-key': 'stuck' };
-    // Primeira requisição que nunca termina (ex.: processo caiu no meio).
     const never = { handle: () => of({}).pipe(delay(60_000)) } as CallHandler;
     void lastValueFrom(interceptor.intercept(createContext({ headers }).context, never)).catch(
       () => undefined,

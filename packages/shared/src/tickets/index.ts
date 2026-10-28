@@ -1,6 +1,3 @@
-// Vocabulário do service desk (Anexo A). Os valores batem com os enums do Prisma
-// nos dois serviços, então o mesmo tipo atravessa banco, API e frontend.
-
 export const TICKET_TYPES = ['INC', 'REQ'] as const;
 export type TicketType = (typeof TICKET_TYPES)[number];
 

@@ -6,8 +6,6 @@ import type {
   TicketType,
 } from '../tickets';
 
-// Contratos da API do assist, compartilhados com o frontend. Datas trafegam como ISO string.
-
 export const SESSION_MESSAGE_LIMIT = 30;
 export const MESSAGE_MAX_LENGTH = 2000;
 

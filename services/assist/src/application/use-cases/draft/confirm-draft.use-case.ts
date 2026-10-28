@@ -62,7 +62,6 @@ export class ConfirmDraftUseCase {
     const ticket = result.data;
     const now = this.clock.now();
 
-    // Duplo clique: o legado deduplica pela chave; aqui só o primeiro registra a confirmação.
     if (!(await this.drafts.confirmIfPending(draft.id, ticket.id)))
       return this.view.build(conversation);
 

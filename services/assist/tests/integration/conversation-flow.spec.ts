@@ -26,7 +26,6 @@ const EMPLOYEE = { id: `emp_it_${crypto.randomUUID().slice(0, 8)}`, name: 'Teste
 const EMAIL = `${EMPLOYEE.id}@nexo.com.br`;
 
 const SCRIPT: ScriptedStep[] = [
-  // Turno 1: monta o rascunho e registra a decisão.
   {
     tools: [
       {
@@ -56,7 +55,6 @@ const SCRIPT: ScriptedStep[] = [
     ],
   },
   { text: 'Preparei o chamado com prioridade alta por causa da reunião. Confira e confirme.' },
-  // Turno 2: pede analista.
   {
     tools: [
       {
@@ -118,16 +116,13 @@ describe('Fluxo da conversa (integration)', () => {
     for (let attempt = 0; attempt < 50; attempt++) {
       try {
         if ((await fetch(`http://localhost:${TICKETS_PORT}/health`)).ok) return;
-      } catch {
-        // ainda subindo
-      }
+      } catch {}
       await Bun.sleep(200);
     }
     throw new Error('serviço de chamados não subiu');
   }
 
   beforeAll(async () => {
-    // O processo do teste já carregou o .env do assist; o tickets precisa do próprio banco.
     const ticketsEnv = config({ path: `${TICKETS_DIR}/.env`, processEnv: {} }).parsed ?? {};
     tickets = Bun.spawn(['bun', 'src/main.ts'], {
       cwd: TICKETS_DIR,
@@ -199,14 +194,12 @@ describe('Fluxo da conversa (integration)', () => {
       category: 'NETWORK_VPN',
     });
 
-    // Nada no legado antes da confirmação.
     const legacy = await fetch(
       `http://localhost:${TICKETS_PORT}/internal/employees/${EMPLOYEE.id}/tickets?scope=all`,
       {
         headers: { 'x-internal-secret': SECRET },
       },
     );
-    // 503 simulado também prova o ponto: o importante é não existir chamado.
     if (legacy.ok) expect(await legacy.json()).toEqual([]);
   });
 
@@ -224,7 +217,6 @@ describe('Fluxo da conversa (integration)', () => {
     ]);
     const statuses = [first.status, second.status].sort();
 
-    // Um confirma; o outro recebe "já confirmado" ou a mesma resposta idempotente.
     expect(statuses[0]).toBe(200);
 
     const trace = await prisma.decisionTrace.findFirst({
@@ -295,7 +287,6 @@ describe('Fluxo da conversa (integration)', () => {
     });
     expect(((await released.json()) as ConsoleConversationDto).state).toBe('AGENT');
 
-    // Encerrar exige estar com analista ou na fila: assume de novo e encerra.
     await fetch(`${base}/console/conversations/${conversationId}/assume`, {
       method: 'POST',
       headers: json(analystToken),

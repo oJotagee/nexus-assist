@@ -7,8 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// Os enums espelham @nexo/shared/tickets.
-
 enum TicketType {
   INC
   REQ
@@ -62,7 +60,6 @@ enum TicketUpdateKind {
 }
 
 model Ticket {
-  // INC-20311 / REQ-10442
   id          String         @id
   type        TicketType
   title       String
@@ -98,15 +95,11 @@ model TicketUpdate {
   @@index([ticketId, createdAt])
 }
 
-// Próximo número por tipo; incrementado de forma atômica ao criar um chamado.
 model TicketSequence {
   type TicketType @id
   next Int
 }
 
-// Escritas por Idempotency-Key. A chave é reservada ANTES de executar a escrita (statusCode
-// nulo = em andamento): requisições concorrentes com a mesma chave esperam a primeira terminar
-// e repetem a resposta dela, em vez de criar outro chamado.
 model IdempotencyRecord {
   key         String    @id
   requestHash String

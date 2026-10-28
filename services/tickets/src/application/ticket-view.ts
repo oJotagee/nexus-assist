@@ -8,8 +8,6 @@ import type {
 
 import type { TicketEntity, TicketUpdate } from '@/domain/entities/ticket.entity';
 
-// O legado já entrega o prazo calculado: quem consome (agent, console) não precisa
-// reimplementar a regra de horas úteis.
 export type TicketView = {
   id: string;
   type: TicketType;

@@ -101,7 +101,6 @@ describe('ConfirmDraftUseCase', () => {
     repos.tickets.failWith = null;
     await useCase.execute(input);
 
-    // A mesma chave nas duas tentativas: o legado deduplica se a primeira tiver chegado.
     expect(repos.tickets.calls.map((call) => call.key)).toEqual(['draft-key-1', 'draft-key-1']);
   });
 

@@ -105,7 +105,6 @@ export class PrismaConversationRepository implements ConversationRepository {
     const rows = await this.prisma.conversation.findMany({
       where: {
         ...filterWhere(filter, analystId),
-        // Conversas vazias (funcionário só abriu o chat) não interessam ao analista.
         messages: { some: {} },
         ...(search
           ? {
@@ -120,7 +119,6 @@ export class PrismaConversationRepository implements ConversationRepository {
       take: CONSOLE_PAGE_SIZE,
     });
 
-    // Quem espera atendimento aparece primeiro, do mais antigo para o mais novo.
     return rows.map(toDomain).sort((a, b) => {
       const waitingA = a.state === 'WAITING_ANALYST' ? 0 : 1;
       const waitingB = b.state === 'WAITING_ANALYST' ? 0 : 1;

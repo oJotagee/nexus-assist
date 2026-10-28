@@ -30,7 +30,6 @@ describe('AgentActionTrail', () => {
     );
 
     expect(screen.getByRole('button', { name: /consultou seus chamados/ })).toBeInTheDocument();
-    // O sistema legado instável fica visível no trail.
     expect(screen.getByText('consultou o INC-20311 (3 tentativas)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Por quê\? 92%/ }));

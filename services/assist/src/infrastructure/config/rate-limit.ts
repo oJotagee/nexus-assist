@@ -24,9 +24,7 @@ export function rateLimitTracker(request: IncomingRequest): string {
         sub?: unknown;
       };
       if (typeof payload.sub === 'string') return `user:${payload.sub}`;
-    } catch {
-      // token malformado: cai no IP
-    }
+    } catch {}
   }
 
   const forwarded = request.headers['x-forwarded-for'];

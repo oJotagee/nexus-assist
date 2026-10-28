@@ -50,7 +50,6 @@ export function findDuplicate(
       ),
     }))
     .filter(({ similarity }) => similarity >= DUPLICATE_THRESHOLD)
-    // Prefere o aberto ao resolvido, depois o mais parecido.
     .sort((a, b) => {
       const openA = OPEN_STATUSES.includes(a.ticket.status) ? 0 : 1;
       const openB = OPEN_STATUSES.includes(b.ticket.status) ? 0 : 1;

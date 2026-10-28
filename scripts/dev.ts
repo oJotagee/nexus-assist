@@ -38,7 +38,6 @@ function shutdown(): void {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-// Se um serviço cair, avisa e derruba os outros para não deixar o ambiente pela metade.
 const first = await Promise.race(
   processes.map(async ({ name, child }) => ({ name, code: await child.exited })),
 );

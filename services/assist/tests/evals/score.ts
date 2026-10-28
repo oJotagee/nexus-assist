@@ -34,7 +34,6 @@ export function scoreScenario(
   if (expect.intent) {
     evaluated.add('intenção');
     const allowed = Array.isArray(expect.intent) ? expect.intent : [expect.intent];
-    // Aceita a intenção declarada pelo modelo ou a final (depois da política de transferência).
     if (!allowed.includes(intent) && !allowed.includes(result.decision.intent)) {
       failures.push({
         criterion: 'intenção',

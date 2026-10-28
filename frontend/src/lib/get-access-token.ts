@@ -4,7 +4,6 @@ import { headers } from 'next/headers';
 export async function getAccessToken(): Promise<string | null> {
   const requestHeaders = await headers();
 
-  // Em HTTPS o Auth.js grava o cookie como `__Secure-authjs.session-token`.
   const secureCookie = requestHeaders.get('x-forwarded-proto') === 'https';
 
   const token = await getToken({
