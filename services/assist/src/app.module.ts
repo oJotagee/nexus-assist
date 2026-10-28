@@ -1,5 +1,7 @@
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { Module } from '@nestjs/common';
 
 import { ConversationViewBuilder } from './application/conversation-view.builder';
@@ -39,6 +41,7 @@ import { NexoAgentRunner } from './infrastructure/agent/nexo-agent.runner';
 import { LlmSessionSummarizer } from './infrastructure/agent/session-summarizer';
 import { SystemClock, UuidGenerator } from './infrastructure/clock/system';
 import jwtConfig from './infrastructure/config/jwt.config';
+import { throttlerOptions } from './infrastructure/config/rate-limit';
 import ticketsApiConfig from './infrastructure/config/tickets-api.config';
 import { HttpTicketsGateway } from './infrastructure/http/http-tickets.gateway';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
@@ -59,6 +62,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [jwtConfig, ticketsApiConfig] }),
     JwtModule.register({}),
+    ThrottlerModule.forRoot(throttlerOptions),
   ],
   controllers: [
     AuthController,
@@ -69,6 +73,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
   ],
   providers: [
     PrismaService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     JwtAuthGuard,
     ConversationViewBuilder,
     LoginUseCase,

@@ -2,6 +2,7 @@ import { type ArgumentsHost, Catch, type ExceptionFilter, HttpStatus } from '@ne
 
 import {
   IdempotencyKeyReuseError,
+  IdempotencyRequestInProgressError,
   MissingIdempotencyKeyError,
 } from '@/domain/errors/idempotency.error';
 import {
@@ -22,6 +23,7 @@ const DOMAIN_ERRORS = [
   TicketCannotBeReopenedError,
   MissingIdempotencyKeyError,
   IdempotencyKeyReuseError,
+  IdempotencyRequestInProgressError,
 ] as const;
 
 type ErrorClass = abstract new (...args: never[]) => Error;
@@ -33,6 +35,8 @@ const STATUS_BY_ERROR = new Map<ErrorClass, HttpStatus>([
   [TicketClosedError, HttpStatus.CONFLICT],
   [TicketCannotBeReopenedError, HttpStatus.CONFLICT],
   [IdempotencyKeyReuseError, HttpStatus.UNPROCESSABLE_ENTITY],
+  // 503: o assist trata como instabilidade e repete com a mesma chave.
+  [IdempotencyRequestInProgressError, HttpStatus.SERVICE_UNAVAILABLE],
 ]);
 
 @Catch(...DOMAIN_ERRORS)

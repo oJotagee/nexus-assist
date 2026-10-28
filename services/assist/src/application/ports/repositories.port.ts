@@ -63,6 +63,11 @@ export interface DraftRepository {
   findPending(conversationId: string): Promise<TicketDraftEntity | null>;
   listByConversation(conversationId: string): Promise<TicketDraftEntity[]>;
   save(draft: TicketDraftEntity): Promise<void>;
+  /**
+   * Marca como confirmado só se ainda estiver pendente (update condicional). Devolve false se
+   * outra requisição confirmou antes: evita duas mensagens de confirmação no duplo clique.
+   */
+  confirmIfPending(id: string, resultTicketId: string): Promise<boolean>;
 }
 
 export interface HelpArticleRepository {

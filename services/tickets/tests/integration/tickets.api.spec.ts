@@ -77,6 +77,21 @@ describe('Tickets API (integration)', () => {
     expect(await prisma.ticket.count({ where: { requesterId: owner } })).toBe(1);
   });
 
+  it('a mesma chave enviada duas vezes ao mesmo tempo cria um chamado só (duplo clique)', async () => {
+    const before = await prisma.ticket.count({ where: { requesterId: owner } });
+    const key = `${owner}-double-click`;
+
+    const responses = await Promise.all([
+      create(owner, key),
+      create(owner, key),
+      create(owner, key),
+    ]);
+    const ids = await Promise.all(responses.map(async (response) => (await response.json()).id));
+
+    expect(new Set(ids).size).toBe(1);
+    expect(await prisma.ticket.count({ where: { requesterId: owner } })).toBe(before + 1);
+  });
+
   it('criações simultâneas recebem identificadores distintos', async () => {
     const responses = await Promise.all(
       Array.from({ length: 5 }, (_, index) => create(owner, `${owner}-parallel-${index}`)),

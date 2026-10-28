@@ -5,6 +5,7 @@ import type { ConversationDto, TicketCategory, TicketPriority } from '@nexo/shar
 import { api } from '@/lib/api';
 import { getApiErrorCode, getApiErrorMessage } from '@/lib/api-error';
 import { authHeaders } from '@/lib/get-access-token';
+import { redirectIfUnauthorized } from '@/lib/session-guard';
 
 export type ConversationActionResult = {
   data?: ConversationDto;
@@ -28,6 +29,7 @@ async function call(
     const { data } = await request(headers);
     return { data };
   } catch (error) {
+    redirectIfUnauthorized(error);
     return { error: getApiErrorMessage(error, fallback), code: getApiErrorCode(error) };
   }
 }

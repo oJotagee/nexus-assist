@@ -1,7 +1,11 @@
 import type { TicketType } from '@nexo/shared';
 
 import type { Clock } from '@/application/ports/clock.port';
-import type { IdempotencyStore, StoredResponse } from '@/application/ports/idempotency-store.port';
+import type {
+  ClaimResult,
+  IdempotencyStore,
+  StoredResponse,
+} from '@/application/ports/idempotency-store.port';
 import type { TicketRepository, TicketScope } from '@/application/ports/ticket-repository.port';
 import type { TicketEntity, TicketUpdate } from '@/domain/entities/ticket.entity';
 
@@ -44,14 +48,25 @@ export class InMemoryTicketRepository implements TicketRepository {
 export class InMemoryIdempotencyStore implements IdempotencyStore {
   readonly records = new Map<string, StoredResponse>();
 
-  async find(key: string): Promise<StoredResponse | null> {
-    return this.records.get(key) ?? null;
+  async claim(key: string, requestHash: string): Promise<ClaimResult> {
+    const existing = this.records.get(key);
+    if (existing) return { claimed: false, existing: { ...existing } };
+    this.records.set(key, { requestHash, statusCode: null, response: null });
+    return { claimed: true };
   }
 
-  async save(key: string, stored: StoredResponse): Promise<boolean> {
-    if (this.records.has(key)) return false;
-    this.records.set(key, stored);
-    return true;
+  async find(key: string): Promise<StoredResponse | null> {
+    const record = this.records.get(key);
+    return record ? { ...record } : null;
+  }
+
+  async complete(key: string, statusCode: number, response: unknown): Promise<void> {
+    const record = this.records.get(key);
+    if (record) this.records.set(key, { ...record, statusCode, response });
+  }
+
+  async release(key: string): Promise<void> {
+    if (this.records.get(key)?.statusCode === null) this.records.delete(key);
   }
 }
 

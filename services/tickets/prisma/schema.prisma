@@ -104,12 +104,14 @@ model TicketSequence {
   next Int
 }
 
-// Respostas de escritas já processadas, por Idempotency-Key. Permite ao assist
-// repetir com segurança uma escrita que falhou no meio do caminho.
+// Escritas por Idempotency-Key. A chave é reservada ANTES de executar a escrita (statusCode
+// nulo = em andamento): requisições concorrentes com a mesma chave esperam a primeira terminar
+// e repetem a resposta dela, em vez de criar outro chamado.
 model IdempotencyRecord {
-  key         String   @id
+  key         String    @id
   requestHash String
-  statusCode  Int
-  response    Json
-  createdAt   DateTime @default(now())
+  statusCode  Int?
+  response    Json?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
 }

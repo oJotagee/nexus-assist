@@ -11,3 +11,10 @@ export class IdempotencyKeyReuseError extends Error {
     this.name = 'IdempotencyKeyReuseError';
   }
 }
+
+export class IdempotencyRequestInProgressError extends Error {
+  constructor() {
+    super('Uma requisição com esta Idempotency-Key ainda está em andamento. Tente de novo.');
+    this.name = 'IdempotencyRequestInProgressError';
+  }
+}

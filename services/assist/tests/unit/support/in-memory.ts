@@ -190,6 +190,12 @@ export class InMemoryDrafts implements DraftRepository {
   async save(draft: TicketDraftEntity) {
     this.items.set(draft.id, draft);
   }
+  async confirmIfPending(id: string, resultTicketId: string) {
+    const draft = this.items.get(id);
+    if (!draft?.isPending()) return false;
+    this.items.set(id, draft.confirm(resultTicketId));
+    return true;
+  }
 }
 
 export class InMemoryArticles implements HelpArticleRepository {

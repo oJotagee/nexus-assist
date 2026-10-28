@@ -4,10 +4,11 @@ import {
   type ExecutionContext,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { lastValueFrom, of } from 'rxjs';
+import { delay, lastValueFrom, of, throwError } from 'rxjs';
 
 import {
   IdempotencyKeyReuseError,
+  IdempotencyRequestInProgressError,
   MissingIdempotencyKeyError,
 } from '@/domain/errors/idempotency.error';
 import { IdempotencyInterceptor } from '@/presentation/interceptors/idempotency.interceptor';
@@ -147,5 +148,64 @@ describe('IdempotencyInterceptor', () => {
     );
 
     await expect(result).rejects.toBeInstanceOf(IdempotencyKeyReuseError);
+  });
+
+  it('duas requisições simultâneas com a mesma chave executam a escrita uma vez só', async () => {
+    const store = new InMemoryIdempotencyStore();
+    const interceptor = new IdempotencyInterceptor(store, 2000);
+    const headers = { 'idempotency-key': 'double-click' };
+    let executions = 0;
+    const slowHandler = {
+      handle: () => {
+        executions += 1;
+        return of({ id: `INC-${20340 + executions}` }).pipe(delay(150));
+      },
+    } as CallHandler;
+
+    const [first, second] = await Promise.all([
+      lastValueFrom(interceptor.intercept(createContext({ headers }).context, slowHandler)),
+      lastValueFrom(interceptor.intercept(createContext({ headers }).context, slowHandler)),
+    ]);
+
+    expect(executions).toBe(1);
+    expect(first).toEqual({ id: 'INC-20341' });
+    expect(second).toEqual({ id: 'INC-20341' });
+  });
+
+  it('se a escrita falhar, a chave é liberada para uma nova tentativa', async () => {
+    const store = new InMemoryIdempotencyStore();
+    const interceptor = new IdempotencyInterceptor(store);
+    const headers = { 'idempotency-key': 'retry-after-error' };
+    const failing = { handle: () => throwError(() => new Error('falhou')) } as CallHandler;
+
+    await expect(
+      lastValueFrom(interceptor.intercept(createContext({ headers }).context, failing)),
+    ).rejects.toThrow('falhou');
+    expect(store.records.has('retry-after-error')).toBe(false);
+
+    const retry = await lastValueFrom(
+      interceptor.intercept(
+        createContext({ headers }).context,
+        handlerReturning({ id: 'INC-20341' }).handler,
+      ),
+    );
+    expect(retry).toEqual({ id: 'INC-20341' });
+  });
+
+  it('desiste de esperar uma requisição presa e pede nova tentativa', async () => {
+    const store = new InMemoryIdempotencyStore();
+    const interceptor = new IdempotencyInterceptor(store, 150);
+    const headers = { 'idempotency-key': 'stuck' };
+    // Primeira requisição que nunca termina (ex.: processo caiu no meio).
+    const never = { handle: () => of({}).pipe(delay(60_000)) } as CallHandler;
+    void lastValueFrom(interceptor.intercept(createContext({ headers }).context, never)).catch(
+      () => undefined,
+    );
+    await Bun.sleep(10);
+
+    const context = createContext({ headers });
+    await expect(
+      lastValueFrom(interceptor.intercept(context.context, handlerReturning({}).handler)),
+    ).rejects.toBeInstanceOf(IdempotencyRequestInProgressError);
   });
 });

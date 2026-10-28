@@ -2,7 +2,15 @@
 
 import type { ConversationDto, TicketSummaryDto } from '@nexo/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Clock, Headset, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Headset,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -218,6 +226,14 @@ export function ChatView({
               {conversation.assignedAnalyst?.supportLevel &&
                 ` · Suporte ${conversation.assignedAnalyst.supportLevel}`}
               .
+            </p>
+          )}
+
+          {conversation.state === 'CLOSED' && (
+            <p className="flex items-center gap-2 rounded-lg bg-muted px-4 py-3 text-sm text-muted-foreground">
+              <CheckCircle2 className="size-4 shrink-0" />
+              Atendimento encerrado pelo analista. Se precisar de mais alguma coisa, é só escrever:
+              o assistente continua daqui.
             </p>
           )}
 

@@ -124,6 +124,11 @@ export function useAgentStream(conversationId: string) {
       } catch (caught) {
         if (controller.signal.aborted) return false;
         const code = (caught as { code?: string | null }).code ?? null;
+        // Sessão expirada: volta para o login em vez de mostrar erro.
+        if (code === 'Unauthorized') {
+          window.location.assign('/login');
+          return false;
+        }
         setError({
           message: caught instanceof Error ? caught.message : 'Não foi possível enviar a mensagem.',
           code,

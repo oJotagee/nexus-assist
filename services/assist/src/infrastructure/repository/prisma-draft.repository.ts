@@ -57,6 +57,14 @@ export class PrismaDraftRepository implements DraftRepository {
     return rows.map(toDomain);
   }
 
+  async confirmIfPending(id: string, resultTicketId: string): Promise<boolean> {
+    const { count } = await this.prisma.ticketDraft.updateMany({
+      where: { id, status: 'PENDING' },
+      data: { status: 'CONFIRMED', resultTicketId },
+    });
+    return count === 1;
+  }
+
   async save(draft: TicketDraftEntity): Promise<void> {
     const data = draft.toSnapshot();
     await this.prisma.ticketDraft.upsert({ where: { id: data.id }, create: data, update: data });

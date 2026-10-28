@@ -5,19 +5,27 @@ import {
   Inject,
   Injectable,
   type NestInterceptor,
+  Optional,
 } from '@nestjs/common';
-import { type Observable, from, of, switchMap } from 'rxjs';
+import { type Observable, catchError, from, of, switchMap } from 'rxjs';
 
 import {
   IDEMPOTENCY_STORE,
   type IdempotencyStore,
+  type StoredResponse,
 } from '@/application/ports/idempotency-store.port';
 import {
   IdempotencyKeyReuseError,
+  IdempotencyRequestInProgressError,
   MissingIdempotencyKeyError,
 } from '@/domain/errors/idempotency.error';
 
 export const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
+
+/** Quanto uma requisição concorrente espera a primeira terminar antes de desistir. */
+export const IN_PROGRESS_WAIT_MS = 5_000;
+export const IDEMPOTENCY_WAIT_MS = Symbol('IDEMPOTENCY_WAIT_MS');
+const POLL_INTERVAL_MS = 100;
 
 type IncomingRequest = {
   method: string;
@@ -33,12 +41,20 @@ type OutgoingResponse = {
 };
 
 /**
- * Escritas exigem Idempotency-Key. Se a mesma chave chegar de novo (o assist repetiu porque
- * não recebeu a resposta), devolve a resposta gravada em vez de criar outro chamado.
+ * Escritas exigem Idempotency-Key. A chave é reservada antes de executar: se a mesma chave
+ * chegar de novo (o assist repetiu, ou o funcionário clicou duas vezes), a segunda requisição
+ * espera a primeira e devolve a mesma resposta, sem criar outro chamado.
  */
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
-  constructor(@Inject(IDEMPOTENCY_STORE) private readonly store: IdempotencyStore) {}
+  private readonly waitMs: number;
+
+  constructor(
+    @Inject(IDEMPOTENCY_STORE) private readonly store: IdempotencyStore,
+    @Optional() @Inject(IDEMPOTENCY_WAIT_MS) waitMs?: number,
+  ) {
+    this.waitMs = waitMs ?? IN_PROGRESS_WAIT_MS;
+  }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const http = context.switchToHttp();
@@ -54,34 +70,47 @@ export class IdempotencyInterceptor implements NestInterceptor {
       .update(`${request.method} ${request.originalUrl} ${JSON.stringify(request.body ?? {})}`)
       .digest('hex');
 
-    return from(this.store.find(key)).pipe(
-      switchMap((stored) => {
-        if (stored) {
-          if (stored.requestHash !== requestHash) throw new IdempotencyKeyReuseError();
-
-          response.status(stored.statusCode);
-          response.setHeader('Idempotent-Replayed', 'true');
-          return of(stored.response);
+    return from(this.store.claim(key, requestHash)).pipe(
+      switchMap((claim) => {
+        if (claim.claimed) {
+          return next.handle().pipe(
+            switchMap(async (body) => {
+              await this.store.complete(key, response.statusCode, body);
+              return body;
+            }),
+            catchError(async (error) => {
+              await this.store.release(key);
+              throw error;
+            }),
+          );
         }
 
-        return next.handle().pipe(
-          switchMap(async (body) => {
-            const saved = await this.store.save(key, {
-              requestHash,
-              statusCode: response.statusCode,
-              response: body,
-            });
+        if (claim.existing.requestHash !== requestHash) throw new IdempotencyKeyReuseError();
 
-            // Outra requisição com a mesma chave terminou antes: devolve a dela.
-            if (!saved) {
-              const winner = await this.store.find(key);
-              return winner?.response ?? body;
-            }
-
-            return body;
+        return from(this.waitForCompletion(key, claim.existing)).pipe(
+          switchMap((stored) => {
+            response.status(stored.statusCode ?? 201);
+            response.setHeader('Idempotent-Replayed', 'true');
+            return of(stored.response);
           }),
         );
       }),
     );
+  }
+
+  private async waitForCompletion(key: string, first: StoredResponse): Promise<StoredResponse> {
+    let current: StoredResponse | null = first;
+    const deadline = Date.now() + this.waitMs;
+
+    while (current && current.statusCode === null) {
+      if (Date.now() >= deadline) throw new IdempotencyRequestInProgressError();
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+      current = await this.store.find(key);
+    }
+
+    // A primeira falhou e liberou a chave: o cliente deve tentar de novo.
+    if (!current) throw new IdempotencyRequestInProgressError();
+
+    return current;
   }
 }

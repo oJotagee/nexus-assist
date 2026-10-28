@@ -151,4 +151,51 @@ check(
   analystHome.headers.get('location')?.endsWith('/console') ?? false,
 );
 
+const consoleHome = await request('/console');
+const consoleHtml = await consoleHome.text();
+check('console lista as conversas', consoleHome.status === 200 && consoleHtml.includes('Conversas'));
+
+const ASSIST = process.env.ASSIST_API_URL ?? 'http://localhost:8081';
+const analystLogin = await fetch(`${ASSIST}/auth/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'rafael.lima@nexo.com.br', password: 'x' }),
+});
+const { accessToken: analystToken } = (await analystLogin.json()) as { accessToken: string };
+const waiting = (await (
+  await fetch(`${ASSIST}/console/conversations?filter=waiting&q=Ana`, {
+    headers: { Authorization: `Bearer ${analystToken}` },
+  })
+).json()) as { items: { id: string }[] };
+const anaConversation = waiting.items[0]?.id;
+check('conversa transferida da Ana está na fila', !!anaConversation);
+
+if (anaConversation) {
+  const page = await request(`/console/${anaConversation}`);
+  const html = await page.text();
+  check('conversa transferida renderiza no console', page.status === 200);
+  check('resumo da transferência aparece para o analista', html.includes('Resumo da transferência'));
+  check(
+    'ações de handoff aparecem',
+    html.includes('Assumir atendimento') && html.includes('Devolver ao agent'),
+  );
+}
+
+// Rate limit das mensagens ao agent (por funcionário).
+await login('gabriela.rocha@nexo.com.br');
+const gabiHtml = await (await request('/atendimento')).text();
+const gabiConversation = gabiHtml.match(/\\?"id\\?":\\?"([a-z0-9-]{20,})\\?",\\?"state/)?.[1];
+let limited = false;
+for (let attempt = 0; attempt < 16 && gabiConversation && !limited; attempt++) {
+  const response = await request(`/api/conversations/${gabiConversation}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: `rate limit ${attempt}` }),
+  });
+  await response.text();
+  limited = response.status === 429;
+}
+check('excesso de mensagens recebe 429', limited);
+
 export {};
+
