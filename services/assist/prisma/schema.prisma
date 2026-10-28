@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EmployeeRole {
+  EMPLOYEE
+  ANALYST
+}
+
+enum SupportLevel {
+  N1
+  N2
+}
+
+/// AGENT: o agent responde · WAITING_ANALYST: transferida, agent pausado ·
+/// WITH_ANALYST: um analista assumiu · CLOSED: encerrada
+enum ConversationState {
+  AGENT
+  WAITING_ANALYST
+  WITH_ANALYST
+  CLOSED
+}
+
+enum HandoffReason {
+  USER_REQUESTED
+  CRITICAL
+  OVERDUE
+  LOW_CONFIDENCE
+}
+
+enum MessageAuthor {
+  EMPLOYEE
+  AGENT
+  ANALYST
+  SYSTEM
+}
+
+enum DraftMode {
+  CREATE
+  UPDATE
+  REOPEN
+}
+
+enum DraftStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Employee {
+  id                String        @id
+  name              String
+  email             String        @unique
+  department        String
+  role              EmployeeRole
+  supportLevel      SupportLevel?
+  passwordChangedAt DateTime
+  createdAt         DateTime      @default(now())
+
+  conversations Conversation[] @relation("EmployeeConversations")
+  assigned      Conversation[] @relation("AssignedAnalyst")
+}
+
+model Conversation {
+  id                String            @id @default(cuid())
+  employeeId        String
+  employee          Employee          @relation("EmployeeConversations", fields: [employeeId], references: [id])
+  state             ConversationState @default(AGENT)
+  assignedAnalystId String?
+  assignedAnalyst   Employee?         @relation("AssignedAnalyst", fields: [assignedAnalystId], references: [id])
+  handoffReason     HandoffReason?
+  handoffSummary    String?
+  handoffGroup      SupportLevel?
+  handoffAt         DateTime?
+  focusTicketId     String?
+  resolvedByAgent   Boolean           @default(false)
+  lastMessageAt     DateTime          @default(now())
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  sessions ChatSession[]
+  messages Message[]
+  drafts   TicketDraft[]
+
+  @@index([employeeId, lastMessageAt])
+  @@index([state, lastMessageAt])
+}
+
+/// Sessão = janela de até 30 mensagens. A próxima sessão começa com o resumo da anterior.
+model ChatSession {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  index          Int
+  messageCount   Int          @default(0)
+  summary        String?
+  startedAt      DateTime     @default(now())
+  endedAt        DateTime?
+
+  messages Message[]
+
+  @@unique([conversationId, index])
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sessionId      String
+  session        ChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  author         MessageAuthor
+  authorId       String?
+  authorName     String?
+  text           String
+  /// Blocos de UI (card de chamado, seleção, rascunho, opções rápidas)
+  blocks         Json          @default("[]")
+  createdAt      DateTime      @default(now())
+
+  trace DecisionTrace?
+
+  @@index([conversationId, createdAt])
+}
+
+/// O que o agent entendeu, que ação tomou, com que segurança e por quê.
+model DecisionTrace {
+  id              String   @id @default(cuid())
+  messageId       String   @unique
+  message         Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  intent          String
+  understood      Json
+  action          Json
+  confidenceScore Float
+  confidenceBand  String
+  rationale       String
+  rulesApplied    String[]
+  steps           Json
+  model           String
+  inputTokens     Int
+  outputTokens    Int
+  latencyMs       Int
+  createdAt       DateTime @default(now())
+}
+
+model TicketDraft {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  mode           DraftMode
+  targetTicketId String?
+  type           String
+  title          String
+  description    String
+  category       String
+  priority       String
+  priorityRule   String
+  impact         String
+  dueAt          DateTime
+  status         DraftStatus  @default(PENDING)
+  /// Reaproveitada em todas as tentativas de envio ao sistema de chamados
+  idempotencyKey String       @unique @default(cuid())
+  resultTicketId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([conversationId, status])
+}
+
+model HelpArticle {
+  id       String   @id
+  title    String
+  body     String
+  category String
+  tags     String[]
+}

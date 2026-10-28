@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import { canReopen, computeDueAt, getTicketDeadline } from '../../src/sla';
+import { canReopen, computeDueAt, formatDueAt, getTicketDeadline } from '../../src/sla';
 
 const at = (iso: string) => new Date(`${iso}-03:00`);
 const NOW = at('2026-10-27T10:00:00');
@@ -80,5 +80,13 @@ describe('canReopen', () => {
   it('não reabre chamado fechado ou ainda aberto', () => {
     expect(canReopen({ status: 'CLOSED', resolvedAt: at('2026-10-26T10:00:00') }, NOW)).toBe(false);
     expect(canReopen({ status: 'OPEN', resolvedAt: null }, NOW)).toBe(false);
+  });
+});
+
+describe('formatDueAt', () => {
+  it('usa "hoje", "amanhã" ou a data, em horário de Brasília', () => {
+    expect(formatDueAt(at('2026-10-27T13:45:00'), NOW)).toBe('hoje às 13h45');
+    expect(formatDueAt(at('2026-10-28T09:00:00'), NOW)).toBe('amanhã às 09h00');
+    expect(formatDueAt(at('2026-10-30T10:00:00'), NOW)).toBe('30/10 às 10h00');
   });
 });

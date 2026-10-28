@@ -8,7 +8,8 @@
     "./tickets": "./src/tickets/index.ts",
     "./sla": "./src/sla/index.ts",
     "./seed": "./src/seed/index.ts",
-    "./http": "./src/http/index.ts"
+    "./http": "./src/http/index.ts",
+    "./assist": "./src/assist/index.ts"
   },
   "scripts": {
     "test": "bun test tests/unit"
