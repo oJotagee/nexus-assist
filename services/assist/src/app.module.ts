@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 
 import { ConversationViewBuilder } from './application/conversation-view.builder';
+import { AGENT_RUNNER } from './application/ports/agent.port';
 import {
   CONVERSATION_REPOSITORY,
   DRAFT_REPOSITORY,
@@ -22,10 +23,20 @@ import { ListConsoleConversationsUseCase } from './application/use-cases/console
 import { SendAnalystMessageUseCase } from './application/use-cases/console/send-analyst-message.use-case';
 import { GetActiveConversationUseCase } from './application/use-cases/conversation/get-active-conversation.use-case';
 import { GetTraceUseCase } from './application/use-cases/conversation/get-trace.use-case';
-import { StartNewSessionUseCase } from './application/use-cases/conversation/start-new-session.use-case';
+import {
+  DAILY_TOKEN_BUDGET,
+  SendMessageUseCase,
+} from './application/use-cases/conversation/send-message.use-case';
+import {
+  SESSION_SUMMARIZER,
+  StartNewSessionUseCase,
+} from './application/use-cases/conversation/start-new-session.use-case';
 import { CancelDraftUseCase } from './application/use-cases/draft/cancel-draft.use-case';
 import { ConfirmDraftUseCase } from './application/use-cases/draft/confirm-draft.use-case';
 import { UpdateDraftUseCase } from './application/use-cases/draft/update-draft.use-case';
+import { AGENT_MODEL, createAgentModel } from './infrastructure/agent/model';
+import { NexoAgentRunner } from './infrastructure/agent/nexo-agent.runner';
+import { LlmSessionSummarizer } from './infrastructure/agent/session-summarizer';
 import { SystemClock, UuidGenerator } from './infrastructure/clock/system';
 import jwtConfig from './infrastructure/config/jwt.config';
 import ticketsApiConfig from './infrastructure/config/tickets-api.config';
@@ -41,6 +52,7 @@ import { AuthController } from './presentation/controllers/auth.controller';
 import { ConsoleController } from './presentation/controllers/console.controller';
 import { ConversationController } from './presentation/controllers/conversation.controller';
 import { HealthController } from './presentation/controllers/health.controller';
+import { MessageStreamController } from './presentation/controllers/message-stream.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 
 @Module({
@@ -51,6 +63,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
   controllers: [
     AuthController,
     ConversationController,
+    MessageStreamController,
     ConsoleController,
     HealthController,
   ],
@@ -63,6 +76,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
     RequestPasswordResetUseCase,
     GetActiveConversationUseCase,
     StartNewSessionUseCase,
+    SendMessageUseCase,
     GetTraceUseCase,
     ConfirmDraftUseCase,
     UpdateDraftUseCase,
@@ -81,6 +95,20 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
     { provide: TOKEN_ISSUER, useClass: JwtTokenIssuer },
     { provide: CLOCK, useClass: SystemClock },
     { provide: ID_GENERATOR, useClass: UuidGenerator },
+    {
+      provide: AGENT_MODEL,
+      useFactory: () =>
+        createAgentModel({
+          apiKey: process.env.ANTHROPIC_API_KEY,
+          modelId: process.env.AGENT_MODEL,
+        }),
+    },
+    { provide: AGENT_RUNNER, useClass: NexoAgentRunner },
+    { provide: SESSION_SUMMARIZER, useClass: LlmSessionSummarizer },
+    {
+      provide: DAILY_TOKEN_BUDGET,
+      useFactory: () => Number(process.env.DAILY_TOKEN_BUDGET ?? 200_000) || 0,
+    },
   ],
 })
 export class AppModule {}

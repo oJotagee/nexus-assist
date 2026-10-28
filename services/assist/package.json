@@ -12,9 +12,12 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:setup": "prisma migrate deploy && prisma db seed"
+    "db:setup": "prisma migrate deploy && prisma db seed",
+    "eval": "bun tests/evals/run-evals.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.90",
+    "@mastra/core": "^1.79.0",
     "@nestjs/common": "^11.1.17",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^11.1.17",
@@ -28,7 +31,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
