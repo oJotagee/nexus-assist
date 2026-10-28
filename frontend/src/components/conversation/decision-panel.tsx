@@ -43,7 +43,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function TraceBody({ trace }: { trace: DecisionTraceDto }) {
   const band = BAND[trace.confidence.band];
   const entities = Object.entries(trace.understood.entities);
-  const isAgentDecision = trace.usage.inputTokens > 0 || trace.usage.model.startsWith('claude');
+  // Confirmações do funcionário e dados de exemplo não passam pelo modelo.
+  const isAgentDecision = trace.usage.inputTokens > 0;
 
   return (
     <div className="space-y-6">

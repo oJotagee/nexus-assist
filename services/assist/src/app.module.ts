@@ -36,7 +36,7 @@ import {
 import { CancelDraftUseCase } from './application/use-cases/draft/cancel-draft.use-case';
 import { ConfirmDraftUseCase } from './application/use-cases/draft/confirm-draft.use-case';
 import { UpdateDraftUseCase } from './application/use-cases/draft/update-draft.use-case';
-import { AGENT_MODEL, createAgentModel } from './infrastructure/agent/model';
+import { AGENT_MODEL, agentModelEnv, createAgentModel } from './infrastructure/agent/model';
 import { NexoAgentRunner } from './infrastructure/agent/nexo-agent.runner';
 import { LlmSessionSummarizer } from './infrastructure/agent/session-summarizer';
 import { SystemClock, UuidGenerator } from './infrastructure/clock/system';
@@ -102,11 +102,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
     { provide: ID_GENERATOR, useClass: UuidGenerator },
     {
       provide: AGENT_MODEL,
-      useFactory: () =>
-        createAgentModel({
-          apiKey: process.env.ANTHROPIC_API_KEY,
-          modelId: process.env.AGENT_MODEL,
-        }),
+      useFactory: () => createAgentModel(agentModelEnv()),
     },
     { provide: AGENT_RUNNER, useClass: NexoAgentRunner },
     { provide: SESSION_SUMMARIZER, useClass: LlmSessionSummarizer },

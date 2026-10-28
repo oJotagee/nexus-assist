@@ -63,6 +63,7 @@ export function scriptedModel(script: ScriptedStep[]): { model: AgentModel; call
     calls: () => call,
     model: {
       id: 'scripted',
+      provider: 'google',
       languageModel: mock as unknown as AgentModel['languageModel'],
       maxOutputTokens: 1024,
       providerOptions: {},

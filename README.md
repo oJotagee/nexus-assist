@@ -15,7 +15,7 @@ bun run setup   # cria os .env, sobe o Postgres, aplica migrations e carrega os 
 bun run dev     # tickets :8082 · assist :8081 · frontend http://localhost:3000
 ```
 
-Para as respostas do agent, coloque sua chave em `services/assist/.env` (`ANTHROPIC_API_KEY`). Sem ela, todo o resto funciona (login, histórico, console, rascunhos) e o chat avisa que o assistente está indisponível.
+Para as respostas do agent, gere uma **chave gratuita** do Gemini em [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (conta Google, sem cartão) e coloque em `GOOGLE_GENERATIVE_AI_API_KEY` no arquivo `services/assist/.env`. Sem ela, todo o resto funciona (login, histórico, console, rascunhos) e o chat avisa que o assistente está indisponível.
 
 **Contas de exemplo** (qualquer senha; a tela de login tem atalhos):
 
@@ -89,7 +89,7 @@ Algumas escolhas deliberadas:
 - **A régua dos evals também é testada** (`tests/unit/evals/score.spec.ts`). A pontuação é objetiva (intenção, ferramentas, rascunho, transferência e texto) e sem LLM-juiz, para ser reprodutível.
 - **Testes que pegam regressão de verdade:** quebrei a checagem de dono do chamado de propósito e os testes de privacidade falharam.
 - **O teste de integração achou um bug real:** dois cliques simultâneos em "Confirmar" criavam dois chamados, porque a idempotency key só era gravada depois da escrita. Agora a chave é reservada antes. A segunda requisição espera e repete a resposta da primeira, e o rascunho é confirmado com update condicional.
-- **Status dos evals:** a suíte está pronta, mas não rodou contra o modelo real no desenvolvimento por falta de chave. Para medir, configure `ANTHROPIC_API_KEY` e rode `bun run eval --report` (e `--model claude-haiku-5-5` para comparar). O relatório vai para `docs/evals/`.
+- **Status dos evals:** a suíte está pronta, mas não rodou contra o modelo real no desenvolvimento por falta de chave. Para medir, configure a chave gratuita do Gemini e rode `bun run eval --report` (com `--only` para rodar em partes se a cota diária do plano gratuito acabar). O relatório vai para `docs/evals/`.
 
 ## Segurança e privacidade
 
@@ -101,7 +101,10 @@ Algumas escolhas deliberadas:
 
 ## Modelo e custo
 
-- **Padrão `claude-opus-5-5`**, o mais capaz, com esforço `low` (respostas de chat são curtas) e fallback de recusa no servidor. `claude-haiku-5-5` reduz o custo por conversa em ~40×; troque em `AGENT_MODEL` depois de comparar nos evals.
+- **Padrão: Gemini Flash (`gemini-3.8-flash`) no plano gratuito do Google AI Studio.** Custo zero e sem cartão, com function calling (que o Mastra usa para as tools) e limite de tokens por minuto folgado para um agent que faz 2 a 4 chamadas por turno. Raciocínio em nível `low`, porque as respostas de chat são curtas.
+- **Limites do plano gratuito:** a cota por minuto e por dia é baixa e varia por projeto (veja em [aistudio.google.com/rate-limit](https://aistudio.google.com/rate-limit)). Quando estoura (429), o chat avisa "o assistente atingiu o limite de uso do momento" e sugere tentar em um minuto ou falar com um analista. O rate limit e o orçamento diário de tokens do assist ajudam a não gastar a cota à toa.
+- **Privacidade no plano gratuito:** o Google pode usar os dados do plano gratuito para melhorar os produtos dele. Aqui os dados são fictícios; num uso real com dados de funcionários, o caminho é o plano pago do Gemini ou outro provedor com retenção controlada.
+- **Trocar de provedor é configuração:** `AGENT_PROVIDER=anthropic` com `ANTHROPIC_API_KEY` usa a Anthropic (pago; padrão `claude-opus-5-5`, com esforço baixo e fallback de recusa). O agent, as tools e as regras não mudam.
 - **Uso consciente:** prompt de sistema e tools estáveis em cache de prompt (o contexto variável vai numa mensagem separada), janela de 16 mensagens + resumo da sessão anterior, teto de 6 passos por turno, prioridade e duplicidade calculadas em código (sem gastar tokens) e tokens por turno registrados no trace.
 
 ## Principais trade-offs
@@ -114,7 +117,8 @@ Algumas escolhas deliberadas:
 | Busca por palavras-chave com pesos na central | 8 artigos, previsível e grátis | não escala para centenas de artigos (aí entram embeddings) |
 | Polling de 4 s no console | simples e robusto | latência de até 4 s para o analista ver mensagens novas |
 | Postgres + Prisma, NestJS em camadas | padrão do time, persistência real | mais cerimônia que um SQLite único |
-| Mastra com o provider `@ai-sdk/anthropic` | o desafio prefere Mastra | depende do provider acompanhar as novidades da API |
+| Gemini Flash no plano gratuito | custo zero, sem cartão, function calling e limite de tokens por minuto suficiente | cota diária baixa e dados podem ser usados pelo Google; para produção, plano pago ou outro provedor |
+| Mastra com providers do AI SDK (`@ai-sdk/google`, `@ai-sdk/anthropic`) | o desafio prefere Mastra; trocar de provedor é só configuração | depende dos providers acompanharem as novidades das APIs |
 
 ## O que eu faria com mais tempo
 
@@ -142,6 +146,6 @@ bun run typecheck && bun run lint
 bun run test:unit && bun run test:interaction
 bun run test:integration      # precisa do Postgres (bun run setup)
 bun run test:smoke            # precisa do app rodando (bun run dev)
-bun run eval --report         # precisa de ANTHROPIC_API_KEY
+bun run eval --report         # precisa de GOOGLE_GENERATIVE_AI_API_KEY (gratuita)
 bun run db:seed               # restaura os dados de exemplo
 ```

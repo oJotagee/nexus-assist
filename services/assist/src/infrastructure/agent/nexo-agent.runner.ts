@@ -49,7 +49,7 @@ export class NexoAgentRunner implements AgentRunner {
   async run(input: AgentTurnInput, sink: AgentTurnSink): Promise<AgentTurnResult> {
     if (!this.model) {
       throw new AgentUnavailableError(
-        'O assistente está sem modelo configurado (ANTHROPIC_API_KEY). Fale com o service desk pelo ramal 4000.',
+        'O assistente está sem modelo configurado (GOOGLE_GENERATIVE_AI_API_KEY). Fale com o service desk pelo ramal 4000.',
       );
     }
 
@@ -69,7 +69,8 @@ export class NexoAgentRunner implements AgentRunner {
       instructions: {
         role: 'system',
         content: SYSTEM_PROMPT,
-        // Ferramentas + prompt de sistema são estáveis: ficam no cache de prompt.
+        // Ferramentas + prompt de sistema são estáveis: na Anthropic, cache explícito; no Gemini,
+        // o cache implícito aproveita o mesmo prefixo (a opção abaixo é ignorada por ele).
         providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
       },
       model: this.model.languageModel,
@@ -133,12 +134,29 @@ export class NexoAgentRunner implements AgentRunner {
       };
     } catch (error) {
       if (error instanceof AgentUnavailableError) throw error;
+      if (isQuotaError(error)) {
+        this.logger.warn('Cota do modelo esgotada (plano gratuito do provedor).');
+        throw new AgentUnavailableError(
+          'O assistente atingiu o limite de uso do momento. Tente de novo em um minuto ou peça para falar com um analista.',
+        );
+      }
       this.logger.error(`Falha no turno do agent: ${error instanceof Error ? error.stack : error}`);
       throw new AgentUnavailableError(
         'Não consegui responder agora. Tente de novo em instantes ou peça para falar com um analista.',
       );
     }
   }
+}
+
+/** 429 / RESOURCE_EXHAUSTED: limite por minuto ou por dia do plano gratuito do provedor. */
+export function isQuotaError(error: unknown): boolean {
+  const status =
+    (error as { statusCode?: unknown; status?: unknown } | null)?.statusCode ??
+    (error as { status?: unknown } | null)?.status;
+  if (status === 429) return true;
+  const text =
+    error instanceof Error ? `${error.message} ${String(error.cause ?? '')}` : String(error);
+  return /\b429\b|RESOURCE_EXHAUSTED|quota|rate limit/i.test(text);
 }
 
 function toModelMessage(message: AgentHistoryMessage): ModelMessage[] {

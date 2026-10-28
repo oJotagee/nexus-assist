@@ -59,4 +59,5 @@ console.log(`
 Pronto. Agora:
   bun run dev        # tickets :8082 · assist :8081 · frontend http://localhost:3000
 
-Para as respostas do agent, coloque sua ANTHROPIC_API_KEY em services/assist/.env.`);
+Para as respostas do agent, gere uma chave gratuita em https://aistudio.google.com/apikey
+e coloque em GOOGLE_GENERATIVE_AI_API_KEY no arquivo services/assist/.env.`);

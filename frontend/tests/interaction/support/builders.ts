@@ -81,7 +81,7 @@ export function buildTrace(overrides: Partial<DecisionTraceDto> = {}): DecisionT
         outputSummary: 'Aguardando analista, prazo vencido',
       },
     ],
-    usage: { model: 'claude-opus-5-5', inputTokens: 2310, outputTokens: 120, latencyMs: 1800 },
+    usage: { model: 'gemini-3.8-flash', inputTokens: 2310, outputTokens: 120, latencyMs: 1800 },
     ...overrides,
   };
 }

@@ -1,13 +1,16 @@
 /**
  * Evals do agent com o modelo real:
- *   bun run eval                          # modelo do .env (AGENT_MODEL)
- *   bun run eval --model claude-haiku-5-5 # compara outro modelo
+ *   bun run eval                              # provedor e modelo do .env (Gemini grátis por padrão)
+ *   bun run eval --model gemini-2.5-flash     # compara outro modelo do mesmo provedor
+ *   bun run eval --provider anthropic         # usa a Anthropic (ANTHROPIC_API_KEY)
  *   bun run eval --only faq-horario,critico-empresa
  *   bun run eval --report                 # grava docs/evals/<data>-<modelo>.md
  *
  * Cada cenário roda o NexoAgentRunner completo (Mastra + tools + regras em código) contra um
  * sistema de chamados em memória com os dados do Anexo B, e é pontuado de forma objetiva
- * (score.ts, que tem testes próprios). Custa tokens: não roda no `bun test`.
+ * (score.ts, que tem testes próprios). Consome cota do provedor: não roda no `bun test`.
+ * No plano gratuito do Gemini, cada cenário faz 2 a 4 chamadas ao modelo; use --only para rodar
+ * em partes se a cota diária for baixa.
  */
 import { config } from 'dotenv';
 
@@ -18,7 +21,7 @@ import type { MessageBlock, TraceStep } from '@nexo/shared';
 
 import { ConversationEntity } from '@/domain/entities/conversation.entity';
 import { evaluateHandoff } from '@/domain/policies/handoff-policy';
-import { createAgentModel } from '@/infrastructure/agent/model';
+import { agentModelEnv, createAgentModel } from '@/infrastructure/agent/model';
 import { NexoAgentRunner } from '@/infrastructure/agent/nexo-agent.runner';
 import { NOW, at, buildTicket, createRepositories } from '../unit/support/in-memory';
 import { type EvalScenario, SCENARIOS } from './scenarios';
@@ -32,7 +35,7 @@ const flag = (name: string) => {
 const only = flag('--only')?.split(',');
 const writeReport = args.includes('--report');
 
-/** US$ por milhão de tokens (entrada, saída). */
+/** US$ por milhão de tokens (entrada, saída). Modelos fora da tabela (Gemini no plano gratuito) custam 0. */
 const PRICE_PER_MTOK: Record<string, [number, number]> = {
   'claude-opus-5-5': [4, 20],
   'claude-sonnet-5-5': [2, 10],
@@ -234,13 +237,15 @@ function renderReport(modelId: string, runs: ScenarioRun[]): string {
 }
 
 async function main(): Promise<void> {
+  const env = agentModelEnv();
   const model = createAgentModel({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    modelId: flag('--model') ?? process.env.AGENT_MODEL,
+    ...env,
+    provider: flag('--provider') ?? env.provider,
+    modelId: flag('--model') ?? (flag('--provider') ? undefined : env.modelId),
   });
   if (!model) {
     console.log(
-      'ANTHROPIC_API_KEY não configurada em services/assist/.env — evals não executados.',
+      'Chave do provedor não configurada em services/assist/.env (GOOGLE_GENERATIVE_AI_API_KEY ou ANTHROPIC_API_KEY) — evals não executados.',
     );
     return;
   }

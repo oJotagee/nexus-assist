@@ -43,7 +43,7 @@ export class LlmSessionSummarizer implements SessionSummarizer {
       });
       const result = await agent.generate(transcript, {
         modelSettings: { maxOutputTokens: 400 },
-        providerOptions: { anthropic: { effort: 'low' } } as never,
+        providerOptions: this.model.providerOptions as never,
       });
       return result.text.trim() || extractiveSummary(messages);
     } catch (error) {
