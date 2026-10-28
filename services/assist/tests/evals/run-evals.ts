@@ -1,26 +1,38 @@
 /**
- * Evals do agent com o modelo real: bun run eval [--model claude-haiku-5-5] [--only id1,id2]
+ * Evals do agent com o modelo real:
+ *   bun run eval                          # modelo do .env (AGENT_MODEL)
+ *   bun run eval --model claude-haiku-5-5 # compara outro modelo
+ *   bun run eval --only faq-horario,critico-empresa
+ *   bun run eval --report                 # grava docs/evals/<data>-<modelo>.md
  *
  * Cada cenário roda o NexoAgentRunner completo (Mastra + tools + regras em código) contra um
- * sistema de chamados em memória com os dados do Anexo B, e checa objetivamente intenção,
- * tools usadas, rascunho, transferência e texto. Custa tokens: não roda no `bun test`.
+ * sistema de chamados em memória com os dados do Anexo B, e é pontuado de forma objetiva
+ * (score.ts, que tem testes próprios). Custa tokens: não roda no `bun test`.
  */
 import { config } from 'dotenv';
 
 config({ path: `${import.meta.dir}/../../.env` });
 
+import { mkdir, writeFile } from 'node:fs/promises';
 import type { MessageBlock, TraceStep } from '@nexo/shared';
-import { evaluateHandoff } from '@/domain/policies/handoff-policy';
+
 import { ConversationEntity } from '@/domain/entities/conversation.entity';
+import { evaluateHandoff } from '@/domain/policies/handoff-policy';
 import { createAgentModel } from '@/infrastructure/agent/model';
 import { NexoAgentRunner } from '@/infrastructure/agent/nexo-agent.runner';
 import { NOW, at, buildTicket, createRepositories } from '../unit/support/in-memory';
-import { SCENARIOS, type EvalScenario } from './scenarios';
+import { type EvalScenario, SCENARIOS } from './scenarios';
+import { CRITERIA, type ScenarioRun, scoreScenario, summarizeByCriterion } from './score';
 
 const args = process.argv.slice(2);
-const modelArg = args[args.indexOf('--model') + 1];
-const only = args.includes('--only') ? args[args.indexOf('--only') + 1]?.split(',') : null;
+const flag = (name: string) => {
+  const index = args.indexOf(name);
+  return index >= 0 ? args[index + 1] : undefined;
+};
+const only = flag('--only')?.split(',');
+const writeReport = args.includes('--report');
 
+/** US$ por milhão de tokens (entrada, saída). */
 const PRICE_PER_MTOK: Record<string, [number, number]> = {
   'claude-opus-5-5': [4, 20],
   'claude-sonnet-5-5': [2, 10],
@@ -57,6 +69,20 @@ const ARTICLES = [
     tags: ['sap', 'senha bloqueada'],
   },
   {
+    id: 'kb-wifi',
+    title: 'Wi-Fi corporativo Nexo-Corp',
+    body: 'Conecte na rede Nexo-Corp com usuário e senha da rede. Se pedir certificado, aceite o "Nexo Root CA". Para reconectar, esqueça a rede e conecte de novo.',
+    category: 'NETWORK_VPN',
+    tags: ['wi-fi', 'wifi', 'certificado'],
+  },
+  {
+    id: 'kb-outlook-celular',
+    title: 'Outlook não sincroniza no celular',
+    body: 'Remova a conta do app Outlook e adicione de novo com o e-mail corporativo.',
+    category: 'EMAIL',
+    tags: ['outlook', 'celular'],
+  },
+  {
     id: 'kb-notebook-lento',
     title: 'Notebook lento depois de atualização',
     body: 'Reinicie, rode o Windows Update até o fim e libere espaço em disco. Se continuar lento, abra um chamado de Hardware.',
@@ -72,17 +98,14 @@ const ARTICLES = [
   },
 ];
 
-async function runScenario(
-  scenario: EvalScenario,
-  model: NonNullable<ReturnType<typeof createAgentModel>>,
-) {
-  const repos = createRepositories();
-  repos.articles.articles.push(...ARTICLES);
+/** Chamados do Anexo B como o legado devolveria em 27/10/2026, 10h. */
+function seedTickets(repos: ReturnType<typeof createRepositories>): void {
   repos.tickets.tickets.push(
     buildTicket(),
     buildTicket({
       id: 'INC-20299',
       title: 'Acesso à pasta Financeiro no SharePoint',
+      description: 'Sem permissão para a pasta Financeiro/Fechamento.',
       category: 'ACCESS',
       status: 'IN_PROGRESS',
       lastUpdateAt: at('2026-10-26T10:00:00'),
@@ -92,8 +115,10 @@ async function runScenario(
       id: 'REQ-10442',
       type: 'REQ',
       title: 'Segundo monitor para home office',
+      description: 'Monitor de 24" para home office.',
       priority: 'LOW',
       status: 'APPROVED',
+      lastUpdateAt: at('2026-10-22T10:00:00'),
       deadline: { dueAt: at('2026-10-29T10:00:00'), overdue: false, slaLabel: '5 dias úteis' },
     }),
     buildTicket({
@@ -113,12 +138,22 @@ async function runScenario(
       category: 'NETWORK_VPN',
     }),
   );
+}
+
+async function runScenario(
+  scenario: EvalScenario,
+  model: NonNullable<ReturnType<typeof createAgentModel>>,
+  prices: [number, number],
+): Promise<ScenarioRun> {
+  const repos = createRepositories();
+  repos.articles.articles.push(...ARTICLES);
+  seedTickets(repos);
   await repos.conversations.create(
     ConversationEntity.start({ id: 'c1', employeeId: 'emp_ana' }, NOW),
   );
 
   const runner = new NexoAgentRunner(model, repos.tickets, repos.drafts, repos.articles, repos.ids);
-  const noop = {
+  const silent = {
     step: (_: TraceStep) => {},
     textDelta: (_: string) => {},
     block: (_: MessageBlock) => {},
@@ -132,12 +167,13 @@ async function runScenario(
       history: scenario.history ?? [],
       userMessage: scenario.userMessage,
       sessionSummary: null,
-      focusTicketId: null,
-      pendingDraft: null,
+      focusTicketId: scenario.focusTicketId ?? null,
+      pendingDraft: scenario.pendingDraft ?? null,
     },
-    noop,
+    silent,
   );
 
+  // A transferência avaliada é a final: pedido do agent + política em código.
   const handoff = evaluateHandoff({
     intent: result.decision.intent,
     confidenceBand: result.decision.confidence.band,
@@ -146,49 +182,61 @@ async function runScenario(
     previousWasLowConfidenceClarify: false,
   });
 
-  const failures: string[] = [];
-  const tools = new Set(result.steps.filter((s) => s.status !== 'FAILED').map((s) => s.tool));
-  const e = scenario.expect;
-  const intent = handoff ? 'HANDOFF' : result.decision.intent;
+  return {
+    scenario,
+    score: scoreScenario(scenario, result, handoff?.reason ?? null),
+    costUsd:
+      (result.usage.inputTokens * prices[0] + result.usage.outputTokens * prices[1]) / 1_000_000,
+    latencyMs: result.usage.latencyMs,
+    declaredByModel: result.decision.declaredByModel,
+  };
+}
 
-  if (e.intent) {
-    const allowed = Array.isArray(e.intent) ? e.intent : [e.intent];
-    if (!allowed.includes(intent) && !allowed.includes(result.decision.intent))
-      failures.push(`intent ${intent} (esperado ${allowed.join('|')})`);
-  }
-  for (const tool of e.tools ?? []) if (!tools.has(tool)) failures.push(`não usou ${tool}`);
-  for (const tool of e.forbiddenTools ?? []) if (tools.has(tool)) failures.push(`usou ${tool}`);
-  if (e.draft === null && result.draft) failures.push('montou rascunho indevido');
-  if (e.draft) {
-    if (!result.draft) failures.push('não montou rascunho');
-    else
-      for (const [key, value] of Object.entries(e.draft)) {
-        const actual = result.draft[key as keyof typeof result.draft];
-        if (actual !== value) failures.push(`rascunho.${key}=${actual} (esperado ${value})`);
-      }
-  }
-  if (e.handoff !== undefined && (handoff?.reason ?? null) !== e.handoff)
-    failures.push(
-      `transferência ${handoff?.reason ?? 'nenhuma'} (esperado ${e.handoff ?? 'nenhuma'})`,
-    );
-  const blockTypes = result.blocks.map((b) => b.type);
-  for (const block of e.blocks ?? [])
-    if (!blockTypes.includes(block)) failures.push(`sem bloco ${block}`);
-  if (e.blocks && e.blocks.length === 0 && blockTypes.some((t) => t !== 'QUICK_REPLIES'))
-    failures.push(`blocos indevidos: ${blockTypes.join(',')}`);
-  const text = result.text.toLowerCase();
-  for (const piece of e.textIncludes ?? [])
-    if (!text.includes(piece.toLowerCase())) failures.push(`texto sem "${piece}"`);
-  for (const piece of e.textExcludes ?? [])
-    if (text.includes(piece.toLowerCase())) failures.push(`texto com "${piece}"`);
+function renderReport(modelId: string, runs: ScenarioRun[]): string {
+  const passed = runs.filter((run) => run.score?.passed).length;
+  const byCriterion = summarizeByCriterion(runs);
+  const cost = runs.reduce((sum, run) => sum + run.costUsd, 0);
+  const latency = runs.reduce((sum, run) => sum + run.latencyMs, 0);
 
-  return { failures, result, declared: result.decision.declaredByModel };
+  const lines = [
+    `# Evals do agent — ${modelId}`,
+    '',
+    `Executado em ${new Date().toISOString()} · ${runs.length} cenários · acerto **${passed}/${runs.length}** (${Math.round((passed / runs.length) * 100)}%)`,
+    '',
+    `Custo médio por turno: US$ ${(cost / runs.length).toFixed(5)} · latência média: ${Math.round(latency / runs.length)} ms · decisão não registrada pelo modelo: ${runs.filter((run) => !run.declaredByModel).length}`,
+    '',
+    '## Por critério',
+    '',
+    '| Critério | Acerto |',
+    '|---|---|',
+    ...CRITERIA.map(
+      (criterion) =>
+        `| ${criterion} | ${byCriterion[criterion].passed}/${byCriterion[criterion].total} |`,
+    ),
+    '',
+    '## Cenários',
+    '',
+    '| Cenário | Resultado | Falhas |',
+    '|---|---|---|',
+    ...runs.map((run) => {
+      const status = run.error ? 'erro' : run.score?.passed ? 'ok' : 'falhou';
+      const failures =
+        run.error ??
+        run.score?.failures
+          .map((failure) => `${failure.criterion}: ${failure.detail}`)
+          .join('; ') ??
+        '';
+      return `| ${run.scenario.id} — ${run.scenario.description} | ${status} | ${failures} |`;
+    }),
+  ];
+
+  return `${lines.join('\n')}\n`;
 }
 
 async function main(): Promise<void> {
   const model = createAgentModel({
     apiKey: process.env.ANTHROPIC_API_KEY,
-    modelId: modelArg ?? process.env.AGENT_MODEL,
+    modelId: flag('--model') ?? process.env.AGENT_MODEL,
   });
   if (!model) {
     console.log(
@@ -197,39 +245,48 @@ async function main(): Promise<void> {
     return;
   }
 
-  const scenarios = SCENARIOS.filter((s) => !only || only.includes(s.id));
-  const [inPrice, outPrice] = PRICE_PER_MTOK[model.id] ?? [0, 0];
-  let passed = 0;
-  let cost = 0;
-  let latency = 0;
-  let undeclared = 0;
+  const scenarios = SCENARIOS.filter((scenario) => !only || only.includes(scenario.id));
+  const prices = PRICE_PER_MTOK[model.id] ?? [0, 0];
+  const runs: ScenarioRun[] = [];
 
   console.log(`Modelo: ${model.id} · ${scenarios.length} cenários\n`);
 
   for (const scenario of scenarios) {
     try {
-      const { failures, result, declared } = await runScenario(scenario, model);
-      const turnCost =
-        (result.usage.inputTokens * inPrice + result.usage.outputTokens * outPrice) / 1_000_000;
-      cost += turnCost;
-      latency += result.usage.latencyMs;
-      if (!declared) undeclared += 1;
-      if (failures.length === 0) passed += 1;
-
+      const run = await runScenario(scenario, model, prices);
+      runs.push(run);
+      const failures =
+        run.score?.failures.map((failure) => `${failure.criterion}: ${failure.detail}`) ?? [];
       console.log(
-        `${failures.length ? '✗' : '✓'} ${scenario.id.padEnd(26)} ${result.usage.latencyMs}ms  $${turnCost.toFixed(5)}${failures.length ? `\n    ${failures.join('\n    ')}` : ''}`,
+        `${run.score?.passed ? '✓' : '✗'} ${scenario.id.padEnd(28)} ${String(run.latencyMs).padStart(6)} ms  US$ ${run.costUsd.toFixed(5)}${failures.length ? `\n    ${failures.join('\n    ')}` : ''}`,
       );
     } catch (error) {
-      console.log(
-        `✗ ${scenario.id.padEnd(26)} erro: ${error instanceof Error ? error.message : error}`,
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      runs.push({
+        scenario,
+        score: null,
+        error: message,
+        costUsd: 0,
+        latencyMs: 0,
+        declaredByModel: false,
+      });
+      console.log(`✗ ${scenario.id.padEnd(28)} erro: ${message}`);
     }
   }
 
-  console.log(
-    `\nAcerto: ${passed}/${scenarios.length} (${Math.round((passed / scenarios.length) * 100)}%) · decisão não registrada pelo modelo: ${undeclared} · custo médio por turno: $${(cost / scenarios.length).toFixed(5)} · latência média: ${Math.round(latency / scenarios.length)}ms`,
-  );
-  if (passed < scenarios.length) process.exitCode = 1;
+  const report = renderReport(model.id, runs);
+  const summary = report.split('\n').slice(2, 5).join('\n');
+  console.log(`\n${summary}`);
+
+  if (writeReport) {
+    const dir = `${import.meta.dir}/../../../../docs/evals`;
+    await mkdir(dir, { recursive: true });
+    const file = `${dir}/${new Date().toISOString().slice(0, 10)}-${model.id}.md`;
+    await writeFile(file, report);
+    console.log(`\nRelatório: ${file}`);
+  }
+
+  if (runs.some((run) => !run.score?.passed)) process.exitCode = 1;
 }
 
 main();

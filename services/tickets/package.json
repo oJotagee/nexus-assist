@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "cd ../.. && bun --env-file=services/tickets/.env --watch services/tickets/src/main.ts",
+    "dev": "bun --env-file=.env --watch src/main.ts",
     "start": "bun run src/main.ts",
     "test": "bun test tests/unit",
     "test:integration": "bun test tests/integration",

@@ -1,21 +1,9 @@
 # Nexo Assist
 
-Agent de atendimento para o service desk de TI da Nexo: o funcionário descreve o problema num chat e o agent decide se responde uma dúvida, consulta ou complementa um chamado, abre um chamado novo ou chama um analista.
+Agent de atendimento do service desk de TI da Nexo. O funcionário descreve o problema num chat e o agent decide, a cada mensagem, se **responde uma dúvida**, **consulta ou complementa um chamado**, **abre um chamado novo** ou **chama um analista**. Do outro lado, o analista tem um console para assumir conversas, com o agent pausado, e devolvê-las ou encerrá-las.
 
-- Desafio e PRD: [`docs/PRD.md`](docs/PRD.md) · protótipo em [`docs/prototype/`](docs/prototype) · design system em [`design-system/MASTER.md`](design-system/MASTER.md)
-
-> README em construção: arquitetura detalhada, como o agent decide, qualidade das decisões e trade-offs entram no marco M7 do PRD.
-
-## Estrutura
-
-```
-frontend/          Next.js 16 (App Router) — chat do funcionário, perfil, login       :3000
-services/assist/   NestJS + Mastra — login, conversas, agent, rascunhos, console      :8081
-services/tickets/  NestJS — sistema de chamados legado simulado (instável de propósito) :8082
-packages/shared/   regras do Anexo A (prioridade, prazo em horas úteis), contratos da API
-```
-
-O frontend fala só com o assist. O serviço de chamados fica na rede interna (`X-Internal-Secret`).
+- PRD: [`docs/PRD.md`](docs/PRD.md) · desafio original: [`docs/Desafio_Tecnico_Nexo_Assist_PRD_v5.pdf`](docs/Desafio_Tecnico_Nexo_Assist_PRD_v5.pdf)
+- Protótipo de referência: [`docs/prototype/`](docs/prototype) · design system: [`design-system/MASTER.md`](design-system/MASTER.md)
 
 ## Como rodar
 
@@ -23,35 +11,137 @@ Pré-requisitos: [Bun 1.4+](https://bun.sh) e Docker.
 
 ```bash
 bun install
-
-# variáveis de ambiente (os valores padrão funcionam localmente)
-cp services/tickets/.env.example services/tickets/.env
-cp services/assist/.env.example  services/assist/.env     # coloque sua ANTHROPIC_API_KEY
-cp frontend/.env.example         frontend/.env
-
-bun run docker:dev:up   # Postgres com os bancos nexo_assist e nexo_tickets
-bun run db:setup        # migrations + dados de exemplo (Anexo B)
-
-# em três terminais
-bun run dev:tickets
-bun run dev:assist
-bun run dev:frontend    # http://localhost:3000
+bun run setup   # cria os .env, sobe o Postgres, aplica migrations e carrega os dados de exemplo
+bun run dev     # tickets :8082 · assist :8081 · frontend http://localhost:3000
 ```
 
-Contas de exemplo (qualquer senha): `ana.souza@nexo.com.br`, `fabio.nunes@nexo.com.br` (funcionários) e `rafael.lima@nexo.com.br` (analista N2). A tela de login tem atalhos para elas.
+Para as respostas do agent, coloque sua chave em `services/assist/.env` (`ANTHROPIC_API_KEY`). Sem ela, todo o resto funciona (login, histórico, console, rascunhos) e o chat avisa que o assistente está indisponível.
 
-Sem `ANTHROPIC_API_KEY` tudo funciona, menos as respostas do agent: o chat avisa que o assistente está indisponível.
+**Contas de exemplo** (qualquer senha; a tela de login tem atalhos):
 
-## Testes
+| Conta | Papel | O que dá para ver |
+|---|---|---|
+| `ana.souza@nexo.com.br` | funcionária | conversa já transferida para o N2 (chamado vencido) |
+| `fabio.nunes@nexo.com.br` | funcionário | chat com o agent ativo |
+| `rafael.lima@nexo.com.br` | analista N2 | console com a fila de conversas |
+
+## Arquitetura
+
+```
+ navegador
+    │  HTTPS (cookie de sessão; o token do assist nunca chega ao navegador)
+    ▼
+ frontend/  Next.js 16 ─ _actions / _data-access ('use server' + axios), React Query, TanStack Table
+    │  REST + SSE (Bearer JWT)
+    ▼
+ services/assist/  NestJS + Mastra ─ login, conversas, agent, rascunhos, console, traces
+    │  REST interno (X-Internal-Secret + Idempotency-Key)
+    ▼
+ services/tickets/  NestJS ─ "sistema legado" de chamados, instável de propósito
+
+ packages/shared/  regras do Anexo A (prioridade, prazo em horas úteis) e contratos da API
+ Postgres: um banco por serviço (nexo_assist, nexo_tickets)
+```
+
+- **Separação:** a interface só fala com o assist. O agent (`services/assist/src/infrastructure/agent`) é um adaptador atrás de um port (`AgentRunner`). O sistema de chamados é um serviço à parte, que o agent só alcança por um cliente HTTP (`TicketsGateway`). Os serviços seguem camadas (domain, application, infrastructure, presentation), como no projeto de referência do time.
+- **Por que dois serviços e não um:** o desafio pede o serviço de chamados separado do agent, e ele precisa se comportar como um legado (fora do nosso controle, instável). Login, conversas e central de ajuda ficam juntos no assist porque mudam juntos.
+- **Persistência:** conversas, mensagens, estado (com o agent ou com um analista), rascunhos, traces e chamados ficam no Postgres e sobrevivem a reinícios (testado com restart do container). O seed tem o modo `SEED_IF_EMPTY`, para o container não apagar dados ao subir de novo.
+- **Tempo real:** a resposta do agent chega por SSE (passos, texto token a token, cards). Um route handler do Next faz o proxy, porque server actions não fazem streaming. O console e o chat com analista atualizam por polling de 4 s.
+
+## Como o agent decide o que fazer
+
+Cada mensagem passa por `SendMessageUseCase` (`services/assist/src/application/use-cases/conversation/send-message.use-case.ts`):
+
+1. **Gates em código:** a conversa é do funcionário? Cabe na sessão (limite de 30 mensagens)? Está dentro do orçamento diário de tokens? Se a conversa está com um analista ou esperando um, **a mensagem é só gravada e o agent não é chamado**.
+2. **Agent Mastra com tools tipadas (Zod)**, criadas por turno com o funcionário autenticado em closure. O `employeeId` nunca vem dos argumentos do modelo, então o agent não consegue ver chamados de outra pessoa nem se for induzido.
+
+   | Tool | Para quê |
+   |---|---|
+   | `search_help_center` | dúvidas e checar se há solução documentada antes de abrir chamado |
+   | `list_my_tickets` / `get_my_ticket` | status, prazo e vencimento; o detalhe já mostra o card |
+   | `show_ticket_picker` / `ask_quick_question` | perguntar o que falta, com opções clicáveis |
+   | `draft_ticket` | monta o rascunho (**não cria chamado**) |
+   | `request_handoff` | transfere para um analista, com resumo |
+   | `register_decision` | registra intenção, entendimento, ação, segurança (0–1) e porquê |
+
+3. **Regras do Anexo A aplicadas em código, não no prompt:**
+   - **Abertura só com confirmação:** o LLM não tem tool que crie chamado. Só o botão "Confirmar" chama `ConfirmDraftUseCase`, que grava no legado com a idempotency key do rascunho.
+   - **Sem duplicidade:** `draft_ticket` compara com os chamados abertos ou resolvidos há até 7 dias, na mesma categoria (`duplicate-detector.ts`), e converte o rascunho em atualização ou reabertura.
+   - **Prioridade e prazo:** o modelo só extrai os fatos (impacto, se impede o trabalho, se há compromisso hoje). A matriz e o prazo em horas úteis estão em `packages/shared/src/sla`, e o trace cita a regra usada.
+   - **Transferência** (`handoff-policy.ts`): respeita o pedido do agent e força a transferência em caso crítico ou de segurança baixa (< 0,6) numa ação. Numa pergunta de esclarecimento, só força na segunda vez seguida, porque perguntar quando falta informação é a conduta certa. Chamado vencido não transfere sozinho: o agent oferece o analista, como na Tela 3.
+4. **Transparência:** cada resposta grava um `DecisionTrace` com o que entendeu, a ação, a segurança, o porquê, as regras aplicadas, os passos (com duração e tentativas no legado) e o custo. Na UI, as ações aparecem acima da resposta ("✓ consultou seus chamados"), e "Por quê?" abre o detalhe, no chat e no console. Se o modelo esquecer de registrar a decisão, ela é inferida dos passos e marcada como inferida.
+5. **Legado instável:** o serviço de chamados responde 503 em ~15% das chamadas. O cliente repete com backoff (300/600/1200 ms), inclusive escritas, que são seguras pela idempotency key. Se esgotar, o passo fica "falhou", o agent explica e oferece tentar de novo ou chamar um analista, e o rascunho é mantido.
+
+## Como garanti a qualidade das decisões
+
+| Camada | O que cobre | Comando |
+|---|---|---|
+| Regras do service desk | horas úteis, matriz de prioridade, prazo, vencimento, reabertura | `bun run test:unit` |
+| Domínio e casos de uso | máquina de estados da conversa, rascunho, limite de sessão, privacidade, política de transferência, duplicidade, busca na central | `bun run test:unit` |
+| **Agent no loop real do Mastra** | modelo roteirizado chamando as tools de verdade: card, privacidade (chamado alheio), duplicidade, rascunho refeito, transferência, decisão inferida | `bun run test:unit` |
+| Integração | serviço de chamados contra o Postgres; **fluxo completo do assist pelo HTTP** com o legado real a 10% de falhas | `bun run test:integration` |
+| Interface | rascunho (confirmar, legado instável, descartar), trail e painel "Por quê?", opções rápidas, ações do console | `bun run test:interaction` |
+| Ponta a ponta | app rodando: login, áreas por papel, token fora do HTML, chat por SSE, console, rate limit | `bun run test:smoke` |
+| **Evals com o modelo real** | 27 cenários do Anexo A com gabarito objetivo: dúvida, VPN 809 Win10 × Win11, status sem número, vencido, reabrir, duplicado, requisição baixa, crítico, fora do escopo, injeção de prompt, chamado alheio, mensagem vaga… Relatório por critério e custo por turno | `bun run eval --report` |
+
+Algumas escolhas deliberadas:
+
+- **A régua dos evals também é testada** (`tests/unit/evals/score.spec.ts`). A pontuação é objetiva (intenção, ferramentas, rascunho, transferência e texto) e sem LLM-juiz, para ser reprodutível.
+- **Testes que pegam regressão de verdade:** quebrei a checagem de dono do chamado de propósito e os testes de privacidade falharam.
+- **O teste de integração achou um bug real:** dois cliques simultâneos em "Confirmar" criavam dois chamados, porque a idempotency key só era gravada depois da escrita. Agora a chave é reservada antes. A segunda requisição espera e repete a resposta da primeira, e o rascunho é confirmado com update condicional.
+- **Status dos evals:** a suíte está pronta, mas não rodou contra o modelo real no desenvolvimento por falta de chave. Para medir, configure `ANTHROPIC_API_KEY` e rode `bun run eval --report` (e `--model claude-haiku-5-5` para comparar). O relatório vai para `docs/evals/`.
+
+## Segurança e privacidade
+
+- Chaves só em `.env` (há `.env.example` de cada serviço). O token do assist fica no cookie de sessão do Auth.js e só o servidor Next o lê.
+- Chamados sempre escopados pelo funcionário, no assist e no legado. Um chamado de outra pessoa responde "não encontrado", sem confirmar que existe.
+- Papéis separados: o funcionário não entra no console (o proxy do Next e um guard no assist bloqueiam).
+- Rate limit: 12 mensagens/min ao agent por funcionário, limite geral por usuário e 10 logins/min por IP. Há também um orçamento diário de tokens por funcionário.
+- O serviço de chamados não é exposto: rotas `/internal/*` com segredo compartilhado (comparação em tempo constante).
+
+## Modelo e custo
+
+- **Padrão `claude-opus-5-5`**, o mais capaz, com esforço `low` (respostas de chat são curtas) e fallback de recusa no servidor. `claude-haiku-5-5` reduz o custo por conversa em ~40×; troque em `AGENT_MODEL` depois de comparar nos evals.
+- **Uso consciente:** prompt de sistema e tools estáveis em cache de prompt (o contexto variável vai numa mensagem separada), janela de 16 mensagens + resumo da sessão anterior, teto de 6 passos por turno, prioridade e duplicidade calculadas em código (sem gastar tokens) e tokens por turno registrados no trace.
+
+## Principais trade-offs
+
+| Decisão | Por quê | Custo da escolha |
+|---|---|---|
+| Criação de chamado fora do LLM (rascunho + botão) | a regra "só cria depois de confirmar" não depende do modelo obedecer | uma interação a mais para o funcionário |
+| Prioridade, prazo e duplicidade em código | auditável e testável; o trace cita a regra exata | casos fora da matriz dependem do modelo extrair bem os fatos |
+| Decisão estruturada via tool (`register_decision`) | uma chamada só, sem segundo turno de LLM | o modelo pode esquecer; mitigado com inferência marcada |
+| Busca por palavras-chave com pesos na central | 8 artigos, previsível e grátis | não escala para centenas de artigos (aí entram embeddings) |
+| Polling de 4 s no console | simples e robusto | latência de até 4 s para o analista ver mensagens novas |
+| Postgres + Prisma, NestJS em camadas | padrão do time, persistência real | mais cerimônia que um SQLite único |
+| Mastra com o provider `@ai-sdk/anthropic` | o desafio prefere Mastra | depende do provider acompanhar as novidades da API |
+
+## O que eu faria com mais tempo
+
+- Rodar e acompanhar os evals em cada mudança de prompt (CI com orçamento), comparar Opus e Haiku e aumentar a base de cenários a partir de conversas reais anonimizadas.
+- Eventos em tempo real para o console (SSE/WebSocket) e notificação ao funcionário quando o analista responde.
+- Busca semântica na central de ajuda e sugestão de artigos novos a partir de chamados repetidos.
+- E2E em navegador (Playwright) cobrindo o fluxo visual; hoje o ponta a ponta é por HTTP.
+- SSO corporativo no lugar do login de demonstração, auditoria de acesso dos analistas e retenção configurável das conversas.
+
+## Estrutura
+
+```
+frontend/          Next.js — (public)/login · (employee)/atendimento, perfil · (analyst)/console
+services/assist/   src/{domain, application, infrastructure/agent, presentation} · tests/{unit, integration, evals}
+services/tickets/  src/{domain, application, infrastructure, presentation} · tests/{unit, integration}
+packages/shared/   tickets, sla, assist (contratos), seed (funcionários)
+scripts/           setup.ts, dev.ts
+docs/              PRD, desafio, protótipo, relatórios de eval
+```
+
+## Comandos úteis
 
 ```bash
-bun run test:unit                 # regras, domínio, casos de uso, agent com modelo roteirizado, parser SSE
-bun run test:integration:tickets  # serviço de chamados contra o Postgres
-bun run eval                      # evals do agent com o modelo real (custa tokens; exige ANTHROPIC_API_KEY)
-bun run test:smoke                # ponta a ponta contra o app rodando (frontend + assist + tickets)
 bun run typecheck && bun run lint
+bun run test:unit && bun run test:interaction
+bun run test:integration      # precisa do Postgres (bun run setup)
+bun run test:smoke            # precisa do app rodando (bun run dev)
+bun run eval --report         # precisa de ANTHROPIC_API_KEY
+bun run db:seed               # restaura os dados de exemplo
 ```
-
-## Modelo
-
-Padrão `claude-opus-5-5` (`AGENT_MODEL` em `services/assist/.env`), com esforço `low` para respostas de chat, cache de prompt no prompt de sistema + tools e fallback de recusa no servidor. Para reduzir o custo por conversa, `claude-haiku-5-5`; compare a qualidade antes com `bun run eval --model claude-haiku-5-5`.

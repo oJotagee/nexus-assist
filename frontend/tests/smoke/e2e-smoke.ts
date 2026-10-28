@@ -153,7 +153,10 @@ check(
 
 const consoleHome = await request('/console');
 const consoleHtml = await consoleHome.text();
-check('console lista as conversas', consoleHome.status === 200 && consoleHtml.includes('Conversas'));
+check(
+  'console lista as conversas',
+  consoleHome.status === 200 && consoleHtml.includes('Conversas'),
+);
 
 const ASSIST = process.env.ASSIST_API_URL ?? 'http://localhost:8081';
 const analystLogin = await fetch(`${ASSIST}/auth/login`, {
@@ -174,7 +177,10 @@ if (anaConversation) {
   const page = await request(`/console/${anaConversation}`);
   const html = await page.text();
   check('conversa transferida renderiza no console', page.status === 200);
-  check('resumo da transferência aparece para o analista', html.includes('Resumo da transferência'));
+  check(
+    'resumo da transferência aparece para o analista',
+    html.includes('Resumo da transferência'),
+  );
   check(
     'ações de handoff aparecem',
     html.includes('Assumir atendimento') && html.includes('Devolver ao agent'),
@@ -198,4 +204,3 @@ for (let attempt = 0; attempt < 16 && gabiConversation && !limited; attempt++) {
 check('excesso de mensagens recebe 429', limited);
 
 export {};
-
