@@ -24,7 +24,8 @@ import { CONVERSATION_QUERY_KEY, type SendInput, useAgentStream } from '../_hook
 import { Composer } from './composer';
 import { AgentReply, type BlockHandlers, MessageItem } from './message-item';
 
-const POLLING_WITH_ANALYST_MS = 4000;
+/** A conversa pode mudar no servidor a qualquer momento (analista assume, devolve ou encerra). */
+const POLLING_MS = 4000;
 
 const SUGGESTIONS = [
   'Qual o status do meu chamado?',
@@ -43,18 +44,16 @@ export function ChatView({
   const [traceMessageId, setTraceMessageId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const stream = useAgentStream(initialConversation.id);
+
   const { data: conversation } = useQuery({
     queryKey: CONVERSATION_QUERY_KEY,
     queryFn: getActiveConversation,
     initialData: initialConversation,
-    refetchInterval: (query) =>
-      query.state.data && query.state.data.state !== 'AGENT' && query.state.data.state !== 'CLOSED'
-        ? POLLING_WITH_ANALYST_MS
-        : false,
-    refetchIntervalInBackground: false,
+    refetchInterval: () => (stream.isStreaming ? false : POLLING_MS),
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
-
-  const stream = useAgentStream(conversation.id);
 
   const newSession = useMutation({
     mutationFn: () => startNewSession(conversation.id),
@@ -178,7 +177,7 @@ export function ChatView({
             </div>
           )}
 
-          {stream.live && agentActive && (
+          {stream.live && (
             <AgentReply
               text={stream.live.text}
               blocks={stream.live.blocks}

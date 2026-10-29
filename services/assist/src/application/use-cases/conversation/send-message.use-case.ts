@@ -50,7 +50,7 @@ export type SendMessageInput = {
 
 /** Canal de saída do turno (o controller transforma em eventos SSE). */
 export interface SendMessageSink extends AgentTurnSink {
-  message(message: MessageDto): void;
+  message(message: MessageDto, agentWillReply: boolean): void;
 }
 
 export type SendMessageOutput = { message: MessageDto | null; conversation: ConversationDto };
@@ -112,7 +112,7 @@ export class SendMessageUseCase {
       text: input.text.trim(),
       blocks: [],
     });
-    sink.message(toMessageDto(employeeMessage));
+    sink.message(toMessageDto(employeeMessage), agentWillReply);
 
     conversation = conversation.receiveEmployeeMessage(this.clock.now());
     await this.conversations.save(conversation);

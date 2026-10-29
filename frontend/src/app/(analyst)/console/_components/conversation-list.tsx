@@ -2,7 +2,7 @@
 
 import type { ConsoleFilter } from '@nexo/shared';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { AlertCircle, Search } from 'lucide-react';
+import { AlertCircle, MessageCircle, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useDeferredValue, useState } from 'react';
@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatTime, getInitials } from '@/lib/utils';
 import { listConsoleConversations } from '../_data-access/console';
 import { ConversationStatus } from './console-labels';
+import { useConsoleActivity } from './use-console-activity';
 
 const FILTERS: { value: ConsoleFilter; label: string }[] = [
   { value: 'all', label: 'Todas' },
@@ -45,8 +46,19 @@ export function ConversationList({ className }: { className?: string }) {
     queryKey: ['console', 'list', filter, query],
     queryFn: () => listConsoleConversations({ filter, query }),
     refetchInterval: 4000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
     placeholderData: keepPreviousData,
   });
+
+  const all = useQuery({
+    queryKey: ['console', 'list', 'all', ''],
+    queryFn: () => listConsoleConversations({ filter: 'all' }),
+    refetchInterval: 4000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  });
+  const { isUnread } = useConsoleActivity(all.data?.items, params.conversationId);
 
   return (
     <aside
@@ -142,6 +154,7 @@ export function ConversationList({ className }: { className?: string }) {
         <ul className="divide-y">
           {list.data?.items.map((item) => {
             const active = params.conversationId === item.id;
+            const unread = isUnread(item);
             const preview = item.lastMessage
               ? `${item.lastMessage.author === 'AGENT' ? 'Nexo: ' : item.lastMessage.author === 'ANALYST' ? 'Você: ' : ''}${item.lastMessage.text}`
               : '';
@@ -165,12 +178,20 @@ export function ConversationList({ className }: { className?: string }) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm font-semibold">{item.employee.name}</span>
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold">{item.employee.name}</span>
+                        {unread && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                            <MessageCircle className="size-2.5" aria-hidden="true" />
+                            Nova
+                          </span>
+                        )}
+                      </span>
                       {item.lastMessage && (
                         <span
                           className={cn(
                             'shrink-0 text-[11px] tabular-nums',
-                            item.state === 'WAITING_ANALYST'
+                            item.state === 'WAITING_ANALYST' || unread
                               ? 'font-semibold text-primary'
                               : 'text-muted-foreground',
                           )}

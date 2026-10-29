@@ -59,7 +59,8 @@ describe('SendMessageUseCase', () => {
   let useCase: SendMessageUseCase;
   const streamed: string[] = [];
   const sink = {
-    message: () => streamed.push('message'),
+    message: (_message: unknown, agentWillReply: boolean) =>
+      streamed.push(agentWillReply ? 'message:agent' : 'message:paused'),
     step: () => streamed.push('step'),
     textDelta: () => streamed.push('delta'),
     block: () => streamed.push('block'),
@@ -104,7 +105,7 @@ describe('SendMessageUseCase', () => {
     expect(conversation.messages.map((m) => m.author)).toEqual(['EMPLOYEE', 'AGENT']);
     expect(message?.trace).toMatchObject({ intent: 'TICKET_STATUS', confidence: { band: 'HIGH' } });
     expect(conversation.session.messageCount).toBe(2);
-    expect(streamed[0]).toBe('message');
+    expect(streamed[0]).toBe('message:agent');
     expect((await repos.conversations.findById('c1'))?.toSnapshot().resolvedByAgent).toBe(true);
   });
 
@@ -118,6 +119,7 @@ describe('SendMessageUseCase', () => {
     const { message, conversation } = await send('Alguém aí?');
 
     expect(runner.inputs).toHaveLength(0);
+    expect(streamed[0]).toBe('message:paused');
     expect(message).toBeNull();
     expect(conversation.state).toBe('WAITING_ANALYST');
     expect(conversation.messages.map((m) => m.author)).toEqual(['EMPLOYEE']);
@@ -214,6 +216,21 @@ describe('SendMessageUseCase', () => {
 
     expect(runner.inputs[1]?.history.map((m) => m.author)).toEqual(['EMPLOYEE', 'AGENT']);
     expect(runner.inputs[1]?.focusTicketId).toBe('INC-20311');
+  });
+
+  it('conversa encerrada pelo analista: a mensagem nova reabre com o agent e ele responde', async () => {
+    const closed = (await repos.conversations.findById('c1'))
+      ?.assume('emp_rafael', NOW)
+      .close('emp_rafael', NOW);
+    if (!closed) throw new Error('conversa não encontrada');
+    await repos.conversations.save(closed);
+
+    const { message, conversation } = await send('Agora preciso de outra coisa: o mouse parou.');
+
+    expect(streamed[0]).toBe('message:agent');
+    expect(runner.inputs).toHaveLength(1);
+    expect(message?.author).toBe('AGENT');
+    expect(conversation.state).toBe('AGENT');
   });
 
   it('recusa quando a sessão chegou ao limite', async () => {

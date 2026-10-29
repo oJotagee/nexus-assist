@@ -46,6 +46,8 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
     queryFn: () => getConsoleConversation(initialConversation.id),
     initialData: initialConversation,
     refetchInterval: 4000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 
   function apply(result: ConsoleActionResult, success?: string) {

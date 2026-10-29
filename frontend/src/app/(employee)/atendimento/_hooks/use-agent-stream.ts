@@ -79,7 +79,7 @@ export function useAgentStream(conversationId: string) {
                     }
                   : current,
               );
-              setLive({ steps: [], text: '', blocks: [] });
+              if (event.agentWillReply) setLive({ steps: [], text: '', blocks: [] });
               break;
             case 'step':
               setLive((turn) => {

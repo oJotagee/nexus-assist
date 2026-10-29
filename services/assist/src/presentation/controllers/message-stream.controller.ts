@@ -51,7 +51,7 @@ export class MessageStreamController {
       const result = await this.sendMessage.execute(
         { conversationId, employeeId: user.id, text: body.text, reply: body.reply },
         {
-          message: (message) => send({ type: 'message', message }),
+          message: (message, agentWillReply) => send({ type: 'message', message, agentWillReply }),
           step: (step) => send({ type: 'step', step }),
           textDelta: (delta) => send({ type: 'text-delta', delta }),
           block: (block) => send({ type: 'block', block }),

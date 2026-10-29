@@ -159,7 +159,8 @@ export type ConversationDto = {
 
 /** Eventos do stream SSE de POST /conversations/:id/messages */
 export type AgentStreamEvent =
-  | { type: 'message'; message: MessageDto }
+  /** A mensagem do funcionário gravada; agentWillReply diz se o agent vai responder (falso com analista). */
+  | { type: 'message'; message: MessageDto; agentWillReply: boolean }
   | { type: 'step'; step: TraceStep }
   | { type: 'text-delta'; delta: string }
   | { type: 'block'; block: MessageBlock }
