@@ -173,8 +173,12 @@ export function toError(payload: unknown): Error {
   if (payload instanceof Error) return payload;
   if (payload && typeof payload === 'object') {
     const details = payload as { message?: unknown; responseBody?: unknown; statusCode?: unknown };
-    const message = [details.message, details.responseBody].filter((part) => typeof part === 'string').join(' ');
-    return Object.assign(new Error(message || JSON.stringify(payload)), { statusCode: details.statusCode });
+    const message = [details.message, details.responseBody]
+      .filter((part) => typeof part === 'string')
+      .join(' ');
+    return Object.assign(new Error(message || JSON.stringify(payload)), {
+      statusCode: details.statusCode,
+    });
   }
   return new Error(String(payload));
 }
