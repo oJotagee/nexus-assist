@@ -1,11 +1,10 @@
+import { LifeBuoy } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 
+/** Marca do Nexo Assist: ícone lucide de suporte (LifeBuoy). */
 export function NexoMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={cn('size-5', className)}>
-      <path d="M4 20V4h3.2l9.6 10.4V4H20v16h-3.2L7.2 9.6V20H4Z" fill="currentColor" />
-    </svg>
-  );
+  return <LifeBuoy aria-hidden="true" strokeWidth={2.25} className={cn('size-5', className)} />;
 }
 
 export function NexoLogo({

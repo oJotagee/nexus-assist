@@ -162,6 +162,27 @@ describe('NexoAgentRunner (Mastra com modelo roteirizado)', () => {
     ).toBe(false);
   });
 
+  it('draft_ticket repetido no mesmo turno reaproveita o rascunho, sem passos duplicados', async () => {
+    const draftInput = {
+      type: 'INC',
+      title: 'VPN não conecta no notebook — erro 809',
+      description: 'Windows 11, desde ontem; impede de trabalhar.',
+      category: 'NETWORK_VPN',
+      impact: 'SELF',
+      blocksWork: true,
+      sameDayCommitment: false,
+    };
+
+    const result = await runner([
+      { tools: [{ name: 'draft_ticket', input: draftInput }] },
+      { tools: [{ name: 'draft_ticket', input: draftInput }] },
+      { text: 'Confira o rascunho.' },
+    ]).run(input(), sink);
+
+    expect(result.steps.filter((step) => step.label === 'montou o rascunho')).toHaveLength(1);
+    expect(await repos.drafts.listByConversation('c1')).toHaveLength(1);
+  });
+
   it('refazer o rascunho cancela o anterior', async () => {
     const draftInput = {
       type: 'REQ',

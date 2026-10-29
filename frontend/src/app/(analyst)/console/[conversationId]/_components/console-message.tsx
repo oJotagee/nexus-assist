@@ -7,9 +7,10 @@ import {
   type MessageDto,
   type TicketDraftDto,
 } from '@nexo/shared';
-import { AlertTriangle, Check } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check } from 'lucide-react';
 
 import { AgentActionTrail } from '@/components/conversation/agent-action-trail';
+import { visibleReplyText } from '@/components/conversation/reply-text';
 import { StatusDot, TicketStatusBadge } from '@/components/conversation/status';
 import { cn, formatTime } from '@/lib/utils';
 
@@ -90,7 +91,12 @@ function ReadOnlyBlock({ block, drafts }: { block: MessageBlock; drafts: TicketD
               {draft.mode === 'CREATE'
                 ? 'de chamado'
                 : `de ${draft.mode === 'UPDATE' ? 'atualização' : 'reabertura'} · ${draft.targetTicketId}`}
-              {draft.resultTicketId && ` → ${draft.resultTicketId}`}
+              {draft.resultTicketId && (
+                <>
+                  <ArrowRight className="mx-1 inline size-3" aria-label="virou" />
+                  {draft.resultTicketId}
+                </>
+              )}
             </span>
             <StatusDot tone={status.tone}>{status.label}</StatusDot>
           </div>
@@ -148,7 +154,11 @@ export function ConsoleMessage({ message, drafts, onOpenDetails }: ConsoleMessag
             </span>
           </p>
           <div className="w-full space-y-2 rounded-xl rounded-tr-sm border border-blue-100 bg-info-soft/70 px-3.5 py-2.5 text-sm leading-relaxed">
-            <p className="whitespace-pre-line">{message.text}</p>
+            {visibleReplyText(message.text, message.blocks) && (
+              <p className="whitespace-pre-line">
+                {visibleReplyText(message.text, message.blocks)}
+              </p>
+            )}
             {message.blocks.map((block, index) => (
               <ReadOnlyBlock key={`${block.type}-${index}`} block={block} drafts={drafts} />
             ))}

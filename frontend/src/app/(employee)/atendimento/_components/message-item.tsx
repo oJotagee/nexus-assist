@@ -10,6 +10,7 @@ import type {
 import { AlertTriangle, Info } from 'lucide-react';
 
 import { AgentActionTrail } from '@/components/conversation/agent-action-trail';
+import { visibleReplyText } from '@/components/conversation/reply-text';
 import { TicketCard } from '@/components/conversation/ticket-card';
 import { cn, formatTime } from '@/lib/utils';
 import { QuickReplies } from './quick-replies';
@@ -120,15 +121,16 @@ export function AgentReply({
     block.type === 'TICKET_CARD' || block.type === 'DRAFT' || block.type === 'TICKET_PICKER';
   const wide = blocks.filter(isWide);
   const inline = blocks.filter((block) => !isWide(block));
+  const shownText = visibleReplyText(text, blocks);
 
   return (
     <div className="max-w-[92%] space-y-2 sm:max-w-[85%]">
       <AgentActionTrail steps={steps} confidence={confidence} onOpenDetails={onOpenDetails} />
 
-      {(text || inline.length > 0 || streaming) && (
+      {(shownText || inline.length > 0 || streaming) && (
         <div className="rounded-xl border bg-card px-4 py-3 text-[15px] leading-relaxed">
-          {text ? (
-            <p className="whitespace-pre-line">{text}</p>
+          {shownText ? (
+            <p className="whitespace-pre-line">{shownText}</p>
           ) : (
             streaming && (
               <span className="inline-flex gap-1 py-2">

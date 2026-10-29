@@ -245,6 +245,24 @@ export function createAgentTools(ctx: TurnContext) {
       targetTicketId: z.string().optional().describe('Obrigatório em UPDATE'),
     }),
     execute: async (input) => {
+      const repeated = state.draft;
+      if (
+        repeated &&
+        repeated.title === input.title.trim() &&
+        repeated.category === input.category &&
+        repeated.type === input.type
+      ) {
+        return {
+          draftId: repeated.id,
+          mode: repeated.mode,
+          targetTicketId: repeated.targetTicketId,
+          priority: TICKET_PRIORITY_LABEL[repeated.priority],
+          priorityRule: repeated.priorityRule,
+          responseDue: formatDueAt(new Date(repeated.dueAt), now),
+          note: 'Este rascunho já foi montado neste turno e está na tela. Não chame draft_ticket de novo; escreva a resposta final.',
+        };
+      }
+
       let target: { ticketId: string; mode: 'UPDATE' | 'REOPEN'; reason: string } | null = null;
 
       if (input.mode === 'UPDATE' && input.targetTicketId) {
