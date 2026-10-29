@@ -100,7 +100,16 @@ Algumas escolhas deliberadas:
 
 ## Modelo e custo
 
-- **Padrão: Gemini Flash (`gemini-3.8-flash`) no plano gratuito do Google AI Studio.** Custo zero e sem cartão, com function calling (que o Mastra usa para as tools) e limite de tokens por minuto folgado para um agent que faz 2 a 4 chamadas por turno. Raciocínio em nível `low`, porque as respostas de chat são curtas.
+- **Padrão: `gemini-3.5-flash-lite` no plano gratuito do Google AI Studio.** Custo zero e sem cartão, com function calling (que o Mastra usa para as tools) e raciocínio em nível `low`. Foi escolhido medindo com uma chave gratuita:
+
+  | Modelo | Resposta | Limite gratuito |
+  |---|---|---|
+  | `gemini-3.5-flash-lite` | ~0,7 s | 15 requisições/min |
+  | `gemini-3.6-flash` | ~1,7 s | 5 requisições/min (estoura com 1 a 2 mensagens por minuto) |
+  | `gemini-3.8-flash` | travou > 40 s | — |
+
+  Cada mensagem do funcionário usa de 2 a 4 requisições ao modelo (ferramentas + resposta), então o flash-lite atende algumas mensagens por minuto.
+- **Tempo máximo por turno:** se o modelo não responder em 45 s (`AGENT_TURN_TIMEOUT_MS`), o chat mostra "o assistente demorou demais" com "Tentar novamente", em vez de ficar carregando. O SDK repete uma vez só, para um limite estourado aparecer logo em vez de prender o chat.
 - **Limites do plano gratuito:** a cota por minuto e por dia é baixa e varia por projeto (veja em [aistudio.google.com/rate-limit](https://aistudio.google.com/rate-limit)). Quando estoura (429), o chat avisa "o assistente atingiu o limite de uso do momento" e sugere tentar em um minuto ou falar com um analista. O rate limit e o orçamento diário de tokens do assist ajudam a não gastar a cota à toa.
 - **Privacidade no plano gratuito:** o Google pode usar os dados do plano gratuito para melhorar os produtos dele. Aqui os dados são fictícios; num uso real com dados de funcionários, o caminho é o plano pago do Gemini ou outro provedor com retenção controlada.
 - **Trocar de provedor é configuração:** `AGENT_PROVIDER=anthropic` com `ANTHROPIC_API_KEY` usa a Anthropic (pago; padrão `claude-opus-5-5`, com esforço baixo e fallback de recusa). O agent, as tools e as regras não mudam.

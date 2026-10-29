@@ -70,3 +70,22 @@ export function scriptedModel(script: ScriptedStep[]): { model: AgentModel; call
     },
   };
 }
+
+/** Modelo que nunca responde (como um provedor travado); só termina quando o turno é abortado. */
+export function hangingModel(): AgentModel {
+  const mock = new MastraLanguageModelV2Mock({
+    modelId: 'hanging',
+    doStream: (options) =>
+      new Promise((_, reject) => {
+        options.abortSignal?.addEventListener('abort', () => reject(options.abortSignal?.reason));
+      }),
+  });
+
+  return {
+    id: 'hanging',
+    provider: 'google',
+    languageModel: mock as unknown as AgentModel['languageModel'],
+    maxOutputTokens: 1024,
+    providerOptions: {},
+  };
+}

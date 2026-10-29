@@ -1,6 +1,6 @@
 import { type AgentIntent, type MessageBlock, type TraceStep, confidenceBand } from '@nexo/shared';
 import { Agent } from '@mastra/core/agent';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
 import {
   type AgentDecision,
@@ -25,6 +25,11 @@ import { type TurnState, createAgentTools } from './tools';
 import { TurnRecorder } from './turn-recorder';
 
 const MAX_STEPS = 6;
+/** Tempo máximo de um turno do agent; passado disso o chat mostra erro com "Tentar novamente". */
+export const DEFAULT_AGENT_TURN_TIMEOUT_MS = Number(process.env.AGENT_TURN_TIMEOUT_MS ?? 45_000);
+export const AGENT_TURN_TIMEOUT = Symbol('AGENT_TURN_TIMEOUT');
+/** Uma repetição só: no plano gratuito, repetir um 429 com espera longa só deixava o chat preso. */
+const MODEL_MAX_RETRIES = 1;
 /** Mensagens da sessão enviadas ao modelo; o resto chega pelo resumo (custo por conversa). */
 const HISTORY_WINDOW = 16;
 
@@ -44,7 +49,12 @@ export class NexoAgentRunner implements AgentRunner {
     @Inject(DRAFT_REPOSITORY) private readonly drafts: DraftRepository,
     @Inject(HELP_ARTICLE_REPOSITORY) private readonly articles: HelpArticleRepository,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
-  ) {}
+    @Optional() @Inject(AGENT_TURN_TIMEOUT) timeoutMs?: number,
+  ) {
+    this.timeoutMs = timeoutMs ?? DEFAULT_AGENT_TURN_TIMEOUT_MS;
+  }
+
+  private readonly timeoutMs: number;
 
   async run(input: AgentTurnInput, sink: AgentTurnSink): Promise<AgentTurnResult> {
     if (!this.model) {
@@ -66,6 +76,7 @@ export class NexoAgentRunner implements AgentRunner {
     const agent = new Agent({
       id: 'nexo-assist',
       name: 'Nexo Assist',
+      maxRetries: MODEL_MAX_RETRIES,
       instructions: {
         role: 'system',
         content: SYSTEM_PROMPT,
@@ -94,11 +105,13 @@ export class NexoAgentRunner implements AgentRunner {
     ];
 
     let text = '';
+    const deadline = AbortSignal.timeout(this.timeoutMs);
     try {
       const output = await agent.stream(messages as never, {
         maxSteps: MAX_STEPS,
         modelSettings: { maxOutputTokens: this.model.maxOutputTokens },
         providerOptions: this.model.providerOptions as never,
+        abortSignal: deadline,
       });
 
       for await (const chunk of output.fullStream) {
@@ -106,11 +119,11 @@ export class NexoAgentRunner implements AgentRunner {
           text += chunk.payload.text;
           sink.textDelta(chunk.payload.text);
         } else if (chunk.type === 'error') {
-          throw chunk.payload.error instanceof Error
-            ? chunk.payload.error
-            : new Error(String(chunk.payload.error));
+          throw toError(chunk.payload.error);
         }
       }
+
+      if (deadline.aborted) throw deadline.reason;
 
       const usage = await output.totalUsage;
 
@@ -132,6 +145,12 @@ export class NexoAgentRunner implements AgentRunner {
       };
     } catch (error) {
       if (error instanceof AgentUnavailableError) throw error;
+      if (deadline.aborted || isTimeoutError(error)) {
+        this.logger.warn(`Turno do agent passou de ${this.timeoutMs} ms.`);
+        throw new AgentUnavailableError(
+          'O assistente demorou demais para responder. Tente de novo ou peça para falar com um analista.',
+        );
+      }
       if (isQuotaError(error)) {
         this.logger.warn('Cota do modelo esgotada (plano gratuito do provedor).');
         throw new AgentUnavailableError(
@@ -144,6 +163,29 @@ export class NexoAgentRunner implements AgentRunner {
       );
     }
   }
+}
+
+/**
+ * Erros do provedor chegam pelo stream do Mastra como objeto simples (com statusCode e
+ * responseBody), não como Error; normaliza para a detecção de cota e o log funcionarem.
+ */
+export function toError(payload: unknown): Error {
+  if (payload instanceof Error) return payload;
+  if (payload && typeof payload === 'object') {
+    const details = payload as { message?: unknown; responseBody?: unknown; statusCode?: unknown };
+    const message = [details.message, details.responseBody].filter((part) => typeof part === 'string').join(' ');
+    return Object.assign(new Error(message || JSON.stringify(payload)), { statusCode: details.statusCode });
+  }
+  return new Error(String(payload));
+}
+
+/** Turno abortado pelo tempo máximo (AbortSignal.timeout). */
+export function isTimeoutError(error: unknown): boolean {
+  const name = (error as { name?: unknown } | null)?.name;
+  if (name === 'TimeoutError' || name === 'AbortError') return true;
+  const text =
+    error instanceof Error ? `${error.message} ${String(error.cause ?? '')}` : String(error);
+  return /TimeoutError|aborted|timed out/i.test(text);
 }
 
 /** 429 / RESOURCE_EXHAUSTED: limite por minuto ou por dia do plano gratuito do provedor. */

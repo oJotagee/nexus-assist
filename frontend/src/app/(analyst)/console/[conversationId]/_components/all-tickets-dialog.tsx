@@ -1,10 +1,11 @@
 'use client';
 
-import type { TicketSummaryDto } from '@nexo/shared';
-import { type SortingState, useTable } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { type SortingState, useTable } from '@tanstack/react-table';
+import type { TicketSummaryDto } from '@nexo/shared';
 import { useState } from 'react';
 
+import { ticketColumns, ticketTableFeatures } from './tickets-columns';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -21,7 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ticketColumns, ticketTableFeatures } from './tickets-columns';
 
 const PAGE_SIZE = 6;
 

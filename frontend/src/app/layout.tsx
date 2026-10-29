@@ -3,8 +3,8 @@ import { Inter, Newsreader } from 'next/font/google';
 
 import './globals.css';
 
-import { cn } from '@/lib/utils';
 import { Providers } from './providers';
+import { cn } from '@/lib/utils';
 
 const inter = Inter({ variable: '--font-inter', subsets: ['latin'], display: 'swap' });
 const newsreader = Newsreader({

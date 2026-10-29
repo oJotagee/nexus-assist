@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 
 import { createAgentModel, resolveProvider } from '@/infrastructure/agent/model';
-import { isQuotaError } from '@/infrastructure/agent/nexo-agent.runner';
+import { isQuotaError, isTimeoutError, toError } from '@/infrastructure/agent/nexo-agent.runner';
 
 describe('createAgentModel', () => {
   it('usa o Gemini gratuito por padrão', () => {
     const model = createAgentModel({ googleApiKey: 'chave-google' });
 
-    expect(model).toMatchObject({ provider: 'google', id: 'gemini-3.8-flash' });
+    expect(model).toMatchObject({ provider: 'google', id: 'gemini-3.5-flash-lite' });
     expect(model?.providerOptions).toEqual({
       google: { thinkingConfig: { thinkingLevel: 'low' } },
     });
@@ -48,5 +48,38 @@ describe('isQuotaError', () => {
   it('não confunde com outros erros', () => {
     expect(isQuotaError(new Error('fetch failed'))).toBe(false);
     expect(isQuotaError(new Error('ticket INC-14290 not found'))).toBe(false);
+  });
+});
+
+describe('isTimeoutError', () => {
+  it('reconhece o turno abortado pelo tempo máximo', () => {
+    expect(isTimeoutError(new DOMException('The operation timed out.', 'TimeoutError'))).toBe(true);
+    expect(
+      isTimeoutError(
+        Object.assign(new Error('This operation was aborted'), { name: 'AbortError' }),
+      ),
+    ).toBe(true);
+  });
+
+  it('não confunde com cota esgotada', () => {
+    expect(isTimeoutError(new Error('RESOURCE_EXHAUSTED: Quota exceeded'))).toBe(false);
+  });
+});
+
+describe('toError', () => {
+  it('normaliza o erro do provedor que chega como objeto pelo stream', () => {
+    const error = toError({
+      statusCode: 429,
+      message: 'You exceeded your current quota',
+      responseBody: '{"error":{"status":"RESOURCE_EXHAUSTED"}}',
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(isQuotaError(error)).toBe(true);
+  });
+
+  it('mantém erros que já são Error', () => {
+    const original = new Error('falhou');
+    expect(toError(original)).toBe(original);
   });
 });

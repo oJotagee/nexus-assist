@@ -6,7 +6,7 @@ import { AgentUnavailableError } from '@/application/ports/agent.port';
 import { ConversationEntity } from '@/domain/entities/conversation.entity';
 import { NexoAgentRunner } from '@/infrastructure/agent/nexo-agent.runner';
 import { NOW, at, buildTicket, createRepositories } from '@tests/unit/support/in-memory';
-import { scriptedModel } from '@tests/unit/support/scripted-model';
+import { hangingModel, scriptedModel } from '@tests/unit/support/scripted-model';
 
 describe('NexoAgentRunner (Mastra com modelo roteirizado)', () => {
   let repos: ReturnType<typeof createRepositories>;
@@ -236,7 +236,25 @@ describe('NexoAgentRunner (Mastra com modelo roteirizado)', () => {
     });
   });
 
-  it('sem chave da Anthropic, avisa que o agent está indisponível', async () => {
+  it('provedor travado vira erro claro dentro do tempo máximo, sem deixar o chat carregando', async () => {
+    const runner = new NexoAgentRunner(
+      hangingModel(),
+      repos.tickets,
+      repos.drafts,
+      repos.articles,
+      repos.ids,
+      300,
+    );
+    const started = Date.now();
+
+    const error = await runner.run(input(), sink).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(AgentUnavailableError);
+    expect((error as Error).message).toContain('demorou demais');
+    expect(Date.now() - started).toBeLessThan(5_000);
+  });
+
+  it('sem chave do provedor, avisa que o agent está indisponível', async () => {
     const unconfigured = new NexoAgentRunner(
       null,
       repos.tickets,

@@ -20,7 +20,7 @@ export type AgentModel = {
  */
 export const DEFAULT_PROVIDER: AgentProvider = 'google';
 export const DEFAULT_MODEL: Record<AgentProvider, string> = {
-  google: 'gemini-3.8-flash',
+  google: 'gemini-3.5-flash-lite',
   anthropic: 'claude-opus-5-5',
 };
 
