@@ -24,6 +24,22 @@ Para as respostas do agent, gere uma **chave gratuita** do Gemini em [aistudio.g
 | `fabio.nunes@nexo.com.br` | funcionário | chat com o agent ativo |
 | `rafael.lima@nexo.com.br` | analista N2 | console com a fila de conversas |
 
+## Deploy (Railway + Vercel)
+
+Os dois serviços e o Postgres ficam no Railway; o frontend na Vercel. O serviço de chamados não tem domínio público: só o assist fala com ele, pela rede privada do Railway.
+
+**Railway** (um projeto com dois Postgres e dois serviços apontando para este repositório, com o diretório raiz vazio):
+
+| Serviço | Dockerfile | Domínio público | Variáveis |
+|---|---|---|---|
+| `postgres-tickets` e `postgres-assist` | — | não | — |
+| `tickets` | `services/tickets/Dockerfile` | não | `DATABASE_URL=${{postgres-tickets.DATABASE_URL}}`, `INTERNAL_API_SECRET` |
+| `assist` | `services/assist/Dockerfile` | sim (porta 8081) | `DATABASE_URL=${{postgres-assist.DATABASE_URL}}`, `JWT_SECRET`, `INTERNAL_API_SECRET` (o mesmo), `TICKETS_API_URL=http://tickets.railway.internal:8082`, `GOOGLE_GENERATIVE_AI_API_KEY` |
+
+O Dockerfile de cada serviço é escolhido pela variável `RAILWAY_DOCKERFILE_PATH`. No start, cada um aplica as migrations e carrega os dados de exemplo só se o banco estiver vazio.
+
+**Vercel**: importe o repositório com o diretório raiz `frontend` e defina `ASSIST_API_URL` (domínio público do assist), `AUTH_SECRET` e `AUTH_TRUST_HOST=true`.
+
 ## Arquitetura
 
 ```

@@ -1,6 +1,9 @@
 import { getAccessToken } from '@/lib/get-access-token';
 import { ASSIST_API_URL } from '@/lib/api';
 
+/** Um turno do agent leva até 45 s (AGENT_TURN_TIMEOUT_MS); folga para o stream terminar na Vercel. */
+export const maxDuration = 60;
+
 /**
  * Exceção ao padrão _actions/_data-access: server actions não fazem streaming incremental,
  * então a resposta do agent passa por este route handler, que lê o token do cookie (nunca
