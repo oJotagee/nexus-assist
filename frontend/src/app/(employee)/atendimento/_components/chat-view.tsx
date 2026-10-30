@@ -42,7 +42,7 @@ export function ChatView({
 }) {
   const queryClient = useQueryClient();
   const [traceMessageId, setTraceMessageId] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
 
   const stream = useAgentStream(initialConversation.id);
 
@@ -98,7 +98,8 @@ export function ChatView({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: as dependências são os gatilhos de rolagem (nova mensagem, texto chegando), não valores lidos no efeito.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const log = scrollRef.current;
+    log?.scrollTo({ top: log.scrollHeight, behavior: 'smooth' });
   }, [
     conversation.messages.length,
     stream.live?.text,
@@ -128,7 +129,7 @@ export function ChatView({
     <>
       <EmployeeTopbar title="Atendimento" status={statusBadge} />
 
-      <main className="flex-1 overflow-y-auto" id="conteudo">
+      <main ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto" id="conteudo">
         <div
           role="log"
           aria-live="polite"
@@ -253,8 +254,6 @@ export function ChatView({
               </Button>
             </div>
           )}
-
-          <div ref={bottomRef} />
         </div>
       </main>
 

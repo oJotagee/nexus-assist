@@ -39,7 +39,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
   const [traceMessageId, setTraceMessageId] = useState<string | null>(null);
   const [ticketsOpen, setTicketsOpen] = useState(false);
   const [draft, setDraft] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: conversation } = useQuery({
     queryKey,
@@ -86,7 +86,8 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
   const lastMessageId = conversation.messages.at(-1)?.id;
   // biome-ignore lint/correctness/useExhaustiveDependencies: rola quando chega mensagem nova.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end' });
+    const log = scrollRef.current;
+    log?.scrollTo({ top: log.scrollHeight });
   }, [lastMessageId]);
 
   const firstName = conversation.employee.name.split(' ')[0];
@@ -186,7 +187,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
           </Button>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-background">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto bg-background">
           <div
             role="log"
             aria-label="Histórico da conversa"
@@ -218,7 +219,6 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
                 onOpenDetails={setTraceMessageId}
               />
             ))}
-            <div ref={bottomRef} />
           </div>
         </div>
 
