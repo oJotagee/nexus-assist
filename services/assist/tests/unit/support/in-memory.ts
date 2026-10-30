@@ -294,7 +294,12 @@ export class FakeTicketsGateway implements TicketsGateway {
   async close(
     employeeId: string,
     ticketId: string,
-    close: { resolution: 'RESOLVED' | 'CANCELLED'; reason: string },
+    close: {
+      resolution: 'RESOLVED' | 'CANCELLED';
+      reason: string;
+      author?: 'AGENT' | 'ANALYST';
+      authorName?: string;
+    },
     key: string,
   ) {
     return this.write('close', key, [employeeId, ticketId, close], () => {

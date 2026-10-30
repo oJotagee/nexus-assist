@@ -11,7 +11,11 @@ import { ChangeConversationStateUseCase } from '@/application/use-cases/console/
 import { GetConsoleConversationUseCase } from '@/application/use-cases/console/get-console-conversation.use-case';
 import { GetEmployeeTicketsUseCase } from '@/application/use-cases/console/get-employee-tickets.use-case';
 import { SendAnalystMessageUseCase } from '@/application/use-cases/console/send-analyst-message.use-case';
-import { AnalystMessageRequestDto, ConsoleListQueryDto } from '../dtos/requests.dto';
+import {
+  AnalystMessageRequestDto,
+  CloseConversationRequestDto,
+  ConsoleListQueryDto,
+} from '../dtos/requests.dto';
 import { type AuthUser, JwtAuthGuard, Roles } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 
@@ -65,8 +69,18 @@ export class ConsoleController {
 
   @Post(':id/close')
   @HttpCode(200)
-  close(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<ConsoleConversationDto> {
-    return this.changeState.execute({ conversationId: id, analystId: user.id, action: 'close' });
+  close(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: CloseConversationRequestDto,
+  ): Promise<ConsoleConversationDto> {
+    return this.changeState.execute({
+      conversationId: id,
+      analystId: user.id,
+      action: 'close',
+      resolveTicket: body.resolveTicket ?? false,
+      resolution: body.resolution,
+    });
   }
 
   @Post(':id/messages')

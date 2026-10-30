@@ -87,7 +87,13 @@ export interface TicketsGateway {
   close(
     employeeId: string,
     ticketId: string,
-    close: { resolution: 'RESOLVED' | 'CANCELLED'; reason: string },
+    close: {
+      resolution: 'RESOLVED' | 'CANCELLED';
+      reason: string;
+      /** Quem fecha: o agent (padrão) ou o analista, com o nome no histórico do chamado. */
+      author?: 'AGENT' | 'ANALYST';
+      authorName?: string;
+    },
     idempotencyKey: string,
   ): Promise<GatewayResult<Ticket>>;
 }

@@ -127,12 +127,17 @@ export class HttpTicketsGateway implements TicketsGateway {
   close(
     employeeId: string,
     ticketId: string,
-    close: { resolution: 'RESOLVED' | 'CANCELLED'; reason: string },
+    close: {
+      resolution: 'RESOLVED' | 'CANCELLED';
+      reason: string;
+      author?: 'AGENT' | 'ANALYST';
+      authorName?: string;
+    },
     key: string,
   ) {
     return this.write(
       `${this.ticketUrl(employeeId, ticketId)}/close`,
-      { ...close, author: 'AGENT' },
+      { author: 'AGENT', ...close },
       key,
       ticketId,
     );

@@ -8,6 +8,7 @@ import {
 } from '@nexo/shared';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
   IsIn,
   IsNotEmpty,
@@ -92,6 +93,22 @@ export class AnalystMessageRequestDto {
   @IsNotEmpty({ message: 'Escreva uma mensagem.' })
   @MaxLength(MESSAGE_MAX_LENGTH)
   text: string;
+}
+
+export class CloseConversationRequestDto {
+  @ApiPropertyOptional({
+    description: 'Resolve também o chamado em foco no sistema de chamados',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  resolveTicket?: boolean;
+
+  @ApiPropertyOptional({ description: 'Solução aplicada; vai para o histórico do chamado' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  resolution?: string;
 }
 
 export class ConsoleListQueryDto {

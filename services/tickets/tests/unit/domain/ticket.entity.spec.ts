@@ -147,6 +147,20 @@ describe('TicketEntity', () => {
       expect(update).toMatchObject({ kind: 'STATUS_CHANGED', body: 'Confirmou que resolveu.' });
     });
 
+    it('resolvido pelo analista: o nome dele fica no histórico', () => {
+      const { update } = buildTicket().close(
+        {
+          resolution: 'RESOLVED',
+          reason: 'Perfil da VPN reinstalado.',
+          author: 'ANALYST',
+          authorName: 'Rafael Lima',
+        },
+        NOW,
+      );
+
+      expect(update).toMatchObject({ author: 'ANALYST', authorName: 'Rafael Lima' });
+    });
+
     it('cancelado: fecha sem resolução e não é reabrível', () => {
       const { ticket } = buildTicket().close(
         { resolution: 'CANCELLED', reason: 'Substituído por outro chamado.', author: 'AGENT' },

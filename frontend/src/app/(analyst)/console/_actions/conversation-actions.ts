@@ -19,10 +19,12 @@ const MESSAGES = {
   close: 'Não foi possível encerrar o atendimento.',
 } as const;
 
-/** Assumir (agent pausa), devolver ao agent ou encerrar. */
+/** Assumir (agent pausa), devolver ao agent ou encerrar (opcionalmente resolvendo o chamado). */
 export async function changeConversationState(input: {
   conversationId: string;
   action: keyof typeof MESSAGES;
+  resolveTicket?: boolean;
+  resolution?: string;
 }): Promise<ConsoleActionResult> {
   const headers = await authHeaders();
   if (!headers) return { error: 'Usuário não autenticado' };
@@ -30,7 +32,9 @@ export async function changeConversationState(input: {
   try {
     const { data } = await api.post<ConsoleConversationDto>(
       `/console/conversations/${encodeURIComponent(input.conversationId)}/${input.action}`,
-      {},
+      input.action === 'close'
+        ? { resolveTicket: input.resolveTicket ?? false, resolution: input.resolution }
+        : {},
       { headers },
     );
     return { data };

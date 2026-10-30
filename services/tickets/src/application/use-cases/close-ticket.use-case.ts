@@ -12,6 +12,7 @@ type CloseTicketInput = {
   resolution: TicketResolution;
   reason: string;
   author: TicketUpdateAuthor;
+  authorName?: string;
 };
 
 @Injectable()
@@ -26,7 +27,12 @@ export class CloseTicketUseCase {
     const current = await findOwnedTicket(this.tickets, input.employeeId, input.ticketId);
 
     const { ticket, update } = current.close(
-      { resolution: input.resolution, reason: input.reason, author: input.author },
+      {
+        resolution: input.resolution,
+        reason: input.reason,
+        author: input.author,
+        authorName: input.authorName ?? null,
+      },
       now,
     );
 

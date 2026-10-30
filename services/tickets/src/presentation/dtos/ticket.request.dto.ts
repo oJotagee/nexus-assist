@@ -121,4 +121,10 @@ export class CloseTicketRequestDto {
   @IsOptional()
   @IsIn(WRITE_AUTHORS)
   author: TicketUpdateAuthor = 'AGENT';
+
+  @ApiPropertyOptional({ example: 'Rafael Lima' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  authorName?: string;
 }

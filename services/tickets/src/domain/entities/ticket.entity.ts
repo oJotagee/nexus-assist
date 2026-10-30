@@ -237,7 +237,12 @@ export class TicketEntity {
    * CANCELLED (fecha sem resolução, ex.: substituído por um chamado sobre outro problema).
    */
   close(
-    input: { resolution: TicketResolution; reason: string; author: TicketUpdateAuthor },
+    input: {
+      resolution: TicketResolution;
+      reason: string;
+      author: TicketUpdateAuthor;
+      authorName?: string | null;
+    },
     now: Date,
   ): TicketChange {
     if (!this.isOpen()) throw new TicketClosedError(this.id);
@@ -253,7 +258,7 @@ export class TicketEntity {
       update: {
         kind: 'STATUS_CHANGED',
         author: input.author,
-        authorName: null,
+        authorName: input.authorName ?? null,
         body: input.reason.trim() || (resolved ? 'Resolvido.' : 'Cancelado.'),
         createdAt: now,
       },

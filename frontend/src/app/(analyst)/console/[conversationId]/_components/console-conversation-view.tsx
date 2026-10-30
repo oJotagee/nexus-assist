@@ -24,6 +24,7 @@ import { EmployeeTicketsPanel } from './employee-tickets-panel';
 import { cn, formatRelative, getInitials } from '@/lib/utils';
 import { StatusDot } from '@/components/conversation/status';
 import { ConsoleMessage } from './console-message';
+import { type CloseConversationChoice, CloseConversationDialog } from './close-conversation-dialog';
 import { Button } from '@/components/ui/button';
 import {
   type ConsoleActionResult,
@@ -38,6 +39,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
   const queryKey = ['console', 'conversation', initialConversation.id];
   const [traceMessageId, setTraceMessageId] = useState<string | null>(null);
   const [ticketsOpen, setTicketsOpen] = useState(false);
+  const [closeOpen, setCloseOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +65,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
   }
 
   const transition = useMutation({
-    mutationFn: (action: 'assume' | 'release' | 'close') =>
+    mutationFn: (action: 'assume' | 'release') =>
       changeConversationState({ conversationId: conversation.id, action }),
     onSuccess: (result, action) =>
       apply(
@@ -71,9 +73,23 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
         {
           assume: 'Atendimento assumido. O agent está pausado.',
           release: 'Conversa devolvida ao agent.',
-          close: 'Atendimento encerrado.',
         }[action],
       ),
+  });
+
+  const close = useMutation({
+    mutationFn: (choice: CloseConversationChoice) =>
+      changeConversationState({ conversationId: conversation.id, action: 'close', ...choice }),
+    onSuccess: (result, choice) => {
+      const ticketId = conversation.focusTicketId;
+      const closed = apply(
+        result,
+        choice.resolveTicket && ticketId
+          ? `Atendimento encerrado e ${ticketId} resolvido.`
+          : 'Atendimento encerrado.',
+      );
+      if (closed) setCloseOpen(false);
+    },
   });
 
   const send = useMutation({
@@ -93,8 +109,12 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
   const firstName = conversation.employee.name.split(' ')[0];
   const mine =
     conversation.state === 'WITH_ANALYST' && conversation.assignedAnalyst?.id === analystId;
-  const busy = transition.isPending;
-  const pendingAction = transition.isPending ? transition.variables : null;
+  const busy = transition.isPending || close.isPending;
+  const pendingAction = close.isPending
+    ? 'close'
+    : transition.isPending
+      ? transition.variables
+      : null;
 
   function submit() {
     const text = draft.trim();
@@ -167,7 +187,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
                 variant="outline"
                 size="sm"
                 className="border-red-200 text-danger hover:bg-danger-soft hover:text-danger"
-                onClick={() => transition.mutate('close')}
+                onClick={() => setCloseOpen(true)}
                 disabled={busy}
               >
                 {pendingAction === 'close' ? <Loader2 className="animate-spin" /> : <LogOut />}
@@ -324,6 +344,16 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
           />
         </SheetContent>
       </Sheet>
+
+      <CloseConversationDialog
+        key={`${conversation.id}-${closeOpen}`}
+        open={closeOpen}
+        onOpenChange={setCloseOpen}
+        ticketId={conversation.focusTicketId}
+        employeeFirstName={firstName}
+        pending={close.isPending}
+        onConfirm={(choice) => close.mutate(choice)}
+      />
 
       <DecisionPanel
         messageId={traceMessageId}
