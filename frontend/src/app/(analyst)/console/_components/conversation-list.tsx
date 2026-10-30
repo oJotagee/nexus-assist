@@ -117,7 +117,7 @@ export function ConversationList({ className }: { className?: string }) {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative min-h-0 flex-1 overflow-y-auto">
         {list.isPending && (
           <ul aria-busy="true" className="divide-y">
             {[0, 1, 2, 3, 4].map((row) => (

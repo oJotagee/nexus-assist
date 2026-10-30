@@ -129,7 +129,7 @@ export function ChatView({
     <>
       <EmployeeTopbar title="Atendimento" status={statusBadge} />
 
-      <main ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto" id="conteudo">
+      <main ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto" id="conteudo">
         <div
           role="log"
           aria-live="polite"

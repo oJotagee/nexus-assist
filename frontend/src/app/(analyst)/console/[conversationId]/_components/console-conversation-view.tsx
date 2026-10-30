@@ -187,7 +187,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
           </Button>
         </header>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto bg-background">
+        <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto bg-background">
           <div
             role="log"
             aria-label="Histórico da conversa"

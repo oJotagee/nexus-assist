@@ -71,7 +71,7 @@ export function EmployeeTicketsPanel({
         )}
       </header>
 
-      <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+      <div className="relative min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
         {tickets.isPending && (
           <div className="space-y-3" aria-busy="true">
             <Skeleton className="h-28 w-full rounded-lg" />
