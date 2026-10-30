@@ -2,11 +2,11 @@
 
 import type { ConversationDto } from '@nexo/shared';
 
-import { api } from '@/lib/api';
+import type { ConversationActionResult } from './draft-actions';
+import { redirectIfUnauthorized } from '@/lib/session-guard';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { authHeaders } from '@/lib/get-access-token';
-import { redirectIfUnauthorized } from '@/lib/session-guard';
-import type { ConversationActionResult } from './draft-actions';
+import { api } from '@/lib/api';
 
 /** Nova sessão depois do limite de 30 mensagens; o histórico continua visível. */
 export async function startNewSession(conversationId: string): Promise<ConversationActionResult> {

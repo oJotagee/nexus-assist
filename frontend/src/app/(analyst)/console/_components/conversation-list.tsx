@@ -1,11 +1,11 @@
 'use client';
 
-import type { ConsoleFilter } from '@nexo/shared';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AlertCircle, MessageCircle, Search } from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { useDeferredValue, useState } from 'react';
+import type { ConsoleFilter } from '@nexo/shared';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
 import { StatusDot } from '@/components/conversation/status';
 import { Button } from '@/components/ui/button';
@@ -63,7 +63,10 @@ export function ConversationList({ className }: { className?: string }) {
   return (
     <aside
       aria-label="Conversas"
-      className={cn('flex w-full shrink-0 flex-col border-r bg-white lg:w-80', className)}
+      className={cn(
+        'flex min-w-0 flex-1 flex-col border-r bg-white lg:w-80 lg:flex-none',
+        className,
+      )}
     >
       <header className="space-y-3 border-b px-4 pt-4 pb-3">
         <div className="flex items-center justify-between">
@@ -181,7 +184,7 @@ export function ConversationList({ className }: { className?: string }) {
                       <span className="flex min-w-0 items-center gap-1.5">
                         <span className="truncate text-sm font-semibold">{item.employee.name}</span>
                         {unread && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
                             <MessageCircle className="size-2.5" aria-hidden="true" />
                             Nova
                           </span>
@@ -203,7 +206,7 @@ export function ConversationList({ className }: { className?: string }) {
                     <span className="block truncate text-xs text-muted-foreground" title={preview}>
                       {preview}
                     </span>
-                    <span className="mt-1 block truncate">
+                    <span className="mt-1 flex min-w-0">
                       <ConversationStatus item={item} />
                     </span>
                   </span>

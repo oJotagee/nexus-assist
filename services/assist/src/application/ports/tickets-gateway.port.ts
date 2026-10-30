@@ -83,4 +83,11 @@ export interface TicketsGateway {
     transfer: { group: 'N1' | 'N2'; summary: string },
     idempotencyKey: string,
   ): Promise<GatewayResult<Ticket>>;
+  /** Fecha como resolvido (reabrível em 7 dias) ou cancelado. */
+  close(
+    employeeId: string,
+    ticketId: string,
+    close: { resolution: 'RESOLVED' | 'CANCELLED'; reason: string },
+    idempotencyKey: string,
+  ): Promise<GatewayResult<Ticket>>;
 }

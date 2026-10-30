@@ -1,15 +1,15 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
 import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
+import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { type LoginSchemaData, useLoginSchema } from './schemas';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const DEMO_ACCOUNTS = [
   { email: 'ana.souza@nexo.com.br', label: 'Ana · funcionária' },

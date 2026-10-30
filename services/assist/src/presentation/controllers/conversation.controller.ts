@@ -3,14 +3,14 @@ import { Body, Controller, Get, HttpCode, Param, Patch, Post, UseGuards } from '
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { GetActiveConversationUseCase } from '@/application/use-cases/conversation/get-active-conversation.use-case';
-import { GetTraceUseCase } from '@/application/use-cases/conversation/get-trace.use-case';
 import { StartNewSessionUseCase } from '@/application/use-cases/conversation/start-new-session.use-case';
-import { CancelDraftUseCase } from '@/application/use-cases/draft/cancel-draft.use-case';
 import { ConfirmDraftUseCase } from '@/application/use-cases/draft/confirm-draft.use-case';
+import { GetTraceUseCase } from '@/application/use-cases/conversation/get-trace.use-case';
+import { CancelDraftUseCase } from '@/application/use-cases/draft/cancel-draft.use-case';
 import { UpdateDraftUseCase } from '@/application/use-cases/draft/update-draft.use-case';
+import { type AuthUser, JwtAuthGuard, Roles } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { UpdateDraftRequestDto } from '../dtos/requests.dto';
-import { type AuthUser, JwtAuthGuard, Roles } from '../guards/jwt-auth.guard';
 
 @ApiTags('conversations')
 @ApiBearerAuth()

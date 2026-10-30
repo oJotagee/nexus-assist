@@ -1,3 +1,5 @@
+import { createTool } from '@mastra/core/tools';
+import { z } from 'zod';
 import {
   AGENT_INTENTS,
   type HandoffReason,
@@ -11,17 +13,15 @@ import {
   confidenceBand,
   formatDueAt,
 } from '@nexo/shared';
-import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
 
-import type { AgentDecision } from '@/application/ports/agent.port';
 import type { DraftRepository, HelpArticleRepository } from '@/application/ports/repositories.port';
-import type { IdGenerator } from '@/application/ports/services.port';
 import type { Ticket, TicketsGateway } from '@/application/ports/tickets-gateway.port';
-import { toDraftDto, toTicketSummary } from '@/application/presenters';
 import { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
-import { TicketNotFoundError } from '@/domain/errors/domain.error';
+import { toDraftDto, toTicketSummary } from '@/application/presenters';
+import type { IdGenerator } from '@/application/ports/services.port';
 import { findDuplicate } from '@/domain/policies/duplicate-detector';
+import type { AgentDecision } from '@/application/ports/agent.port';
+import { TicketNotFoundError } from '@/domain/errors/domain.error';
 import { searchHelpArticles } from '@/domain/policies/help-search';
 import type { TurnRecorder } from './turn-recorder';
 

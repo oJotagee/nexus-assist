@@ -1,8 +1,8 @@
 'use client';
 
 import { AGENT_INTENT_LABEL, type DecisionTraceDto, type TraceStep } from '@nexo/shared';
-import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Check, Loader2, RotateCw, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 import { getDecisionTrace } from '@/app/_data-access/get-decision-trace';
 import { Button } from '@/components/ui/button';

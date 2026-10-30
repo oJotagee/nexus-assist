@@ -2,10 +2,10 @@
 
 import type { ConsoleConversationDto } from '@nexo/shared';
 
-import { api } from '@/lib/api';
 import { getApiErrorCode, getApiErrorMessage } from '@/lib/api-error';
-import { authHeaders } from '@/lib/get-access-token';
 import { redirectIfUnauthorized } from '@/lib/session-guard';
+import { authHeaders } from '@/lib/get-access-token';
+import { api } from '@/lib/api';
 
 export type ConsoleActionResult = {
   data?: ConsoleConversationDto;

@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import { EmployeeNotFoundError } from '@/domain/errors/domain.error';
 import { EMPLOYEE_REPOSITORY, type EmployeeRepository } from '../../ports/repositories.port';
+import { EmployeeNotFoundError } from '@/domain/errors/domain.error';
 
 /** Simulado: num ambiente real dispararia o fluxo de redefinição do AD. */
 @Injectable()

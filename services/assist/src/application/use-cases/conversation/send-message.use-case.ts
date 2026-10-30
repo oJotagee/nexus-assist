@@ -1,3 +1,4 @@
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   type ConversationDto,
   type MessageBlock,
@@ -5,18 +6,34 @@ import {
   type SupportLevel,
   type TraceStep,
 } from '@nexo/shared';
-import { Inject, Injectable, Logger } from '@nestjs/common';
 
+import {
+  TICKETS_GATEWAY,
+  type Ticket,
+  type TicketsGateway,
+} from '../../ports/tickets-gateway.port';
 import type { ConversationEntity } from '@/domain/entities/conversation.entity';
-import type { DecisionTraceRecord, MessageRecord } from '@/domain/entities/message';
-import { DailyBudgetExceededError, EmployeeNotFoundError } from '@/domain/errors/domain.error';
+import type { DecisionTraceRecord, EmployeeRecord, MessageRecord } from '@/domain/entities/message';
+import { ConversationViewBuilder } from '../../conversation-view.builder';
+import { loadOwnedConversation } from './load-owned-conversation';
+import { assertCanSend } from '@/domain/policies/session-limit';
+import { CLOCK, type Clock } from '../../ports/services.port';
+import { toDraftDto, toMessageDto, toTicketSummary } from '../../presenters';
+import {
+  DailyBudgetExceededError,
+  EmployeeNotFoundError,
+  TicketConflictError,
+} from '@/domain/errors/domain.error';
+import {
+  type FollowUpAnswer,
+  classifyFollowUpAnswer,
+  describesProblem,
+} from '@/domain/policies/follow-up';
 import {
   type HandoffDecision,
   evaluateHandoff,
   handoffRule,
 } from '@/domain/policies/handoff-policy';
-import { assertCanSend } from '@/domain/policies/session-limit';
-import { ConversationViewBuilder } from '../../conversation-view.builder';
 import {
   AGENT_RUNNER,
   type AgentHistoryMessage,
@@ -34,10 +51,6 @@ import {
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from '../../ports/repositories.port';
-import { CLOCK, type Clock } from '../../ports/services.port';
-import { TICKETS_GATEWAY, type TicketsGateway } from '../../ports/tickets-gateway.port';
-import { toDraftDto, toMessageDto } from '../../presenters';
-import { loadOwnedConversation } from './load-owned-conversation';
 
 export const DAILY_TOKEN_BUDGET = Symbol('DAILY_TOKEN_BUDGET');
 
@@ -63,9 +76,11 @@ const RESOLVING_INTENTS = new Set(['FAQ', 'TICKET_STATUS']);
  *  1. gates: dono da conversa, limite da sessão, orçamento diário;
  *  2. grava a mensagem do funcionário;
  *  3. se a conversa está com (ou esperando) um analista, para aqui: o agent não responde;
- *  4. roda o agent em streaming;
- *  5. aplica a política de transferência em código;
- *  6. grava a resposta + o trace da decisão.
+ *  4. se o analista acabou de devolver a conversa, a resposta à pergunta de acompanhamento
+ *     (resolveu / outro problema / continua) é tratada em código;
+ *  5. roda o agent em streaming;
+ *  6. aplica a política de transferência em código (inclui "é o mesmo problema" → volta);
+ *  7. grava a resposta + o trace da decisão.
  */
 @Injectable()
 export class SendMessageUseCase {
@@ -121,6 +136,25 @@ export class SendMessageUseCase {
       return { message: null, conversation: await this.view.build(conversation) };
     }
 
+    if (conversation.followUp === 'AWAITING_ANSWER') {
+      const answer = classifyFollowUpAnswer(employeeMessage.text);
+      const needsAgent =
+        answer === null || (answer === 'NEW_PROBLEM' && describesProblem(employeeMessage.text));
+
+      if (!needsAgent) {
+        const reply = await this.answerFollowUp(conversation, employee, answer);
+        return {
+          message: toMessageDto(reply.record, reply.trace),
+          conversation: await this.view.build(
+            (await this.conversations.findById(conversation.id)) ?? conversation,
+          ),
+        };
+      }
+
+      conversation = conversation.startNewProblem();
+      await this.conversations.save(conversation);
+    }
+
     const pendingDraft = await this.drafts.findPending(conversation.id);
     const result = await this.agent.run(
       {
@@ -132,6 +166,8 @@ export class SendMessageUseCase {
         sessionSummary: session.summary,
         focusTicketId: conversation.focusTicketId,
         pendingDraft: pendingDraft ? toDraftDto(pendingDraft) : null,
+        previousTicketId:
+          conversation.followUp === 'NEW_PROBLEM' ? conversation.followUpTicketId : null,
       },
       sink,
     );
@@ -141,14 +177,16 @@ export class SendMessageUseCase {
       .map((message) => previousTraces.get(message.id))
       .find((trace) => trace !== undefined);
 
-    const handoff = evaluateHandoff({
-      intent: result.decision.intent,
-      confidenceBand: result.decision.confidence.band,
-      requested: result.handoffRequest,
-      draftPriority: result.draft?.priority ?? null,
-      previousWasLowConfidenceClarify:
-        lastAgentTrace?.intent === 'CLARIFY' && lastAgentTrace.confidenceBand === 'LOW',
-    });
+    const handoff =
+      this.sameProblemReturn(conversation, result) ??
+      evaluateHandoff({
+        intent: result.decision.intent,
+        confidenceBand: result.decision.confidence.band,
+        requested: result.handoffRequest,
+        draftPriority: result.draft?.priority ?? null,
+        previousWasLowConfidenceClarify:
+          lastAgentTrace?.intent === 'CLARIFY' && lastAgentTrace.confidenceBand === 'LOW',
+      });
 
     const agentMessage = await this.persistReply(conversation, employee.id, result, handoff);
     const message = toMessageDto(agentMessage.record, agentMessage.trace);
@@ -178,12 +216,18 @@ export class SendMessageUseCase {
     const blocks: MessageBlock[] = [...result.blocks];
 
     if (handoff) {
-      const summary = result.handoffRequest?.summary ?? this.fallbackSummary(result);
+      const returnedTicketId = handoff.reason === 'RETURNED' ? conversation.followUpTicketId : null;
+      const summary = returnedTicketId
+        ? `O problema do ${returnedTicketId} continua: ${result.decision.understood.summary}`
+        : (result.handoffRequest?.summary ?? this.fallbackSummary(result));
+      if (returnedTicketId) next = next.focusOn(returnedTicketId);
       next = next.handOff({ reason: handoff.reason, summary, group: handoff.group }, now);
       steps.push(await this.transferTicket(employeeId, next.focusTicketId, handoff, summary));
 
       if (!rules.includes(handoff.rule)) rules.push(handoff.rule);
-      if (handoff.forcedByPolicy) {
+      if (returnedTicketId) {
+        text = `Pelo que você descreveu, é o mesmo problema do ${returnedTicketId}. Devolvi a conversa para o ${GROUP_LABEL[handoff.group]}: um analista vai retomar o atendimento por aqui.`;
+      } else if (handoff.forcedByPolicy) {
         text += `\n\nEncaminhei esta conversa para o ${GROUP_LABEL[handoff.group]}: um analista vai continuar o atendimento por aqui.`;
       }
       blocks.push({
@@ -237,6 +281,186 @@ export class SendMessageUseCase {
     }
 
     return { record, trace };
+  }
+
+  /**
+   * Depois de "tenho outro problema", se o rascunho do agent cai no chamado que o analista acabou
+   * de atender (a verificação de duplicidade apontou para ele), é o mesmo problema: volta para a fila.
+   */
+  private sameProblemReturn(
+    conversation: ConversationEntity,
+    result: AgentTurnResult,
+  ): HandoffDecision | null {
+    const previous = conversation.followUpTicketId;
+    if (conversation.followUp !== 'NEW_PROBLEM' || !previous) return null;
+    if (result.draft?.targetTicketId !== previous) return null;
+
+    return {
+      reason: 'RETURNED',
+      group: conversation.handoffGroup ?? 'N2',
+      forcedByPolicy: true,
+      rule: handoffRule('RETURNED'),
+    };
+  }
+
+  /** Resposta à pergunta "o atendimento resolveu?", tratada em código, sem chamar o modelo. */
+  private async answerFollowUp(
+    conversation: ConversationEntity,
+    employee: EmployeeRecord,
+    answer: FollowUpAnswer,
+  ): Promise<{ record: MessageRecord; trace: DecisionTraceRecord }> {
+    const now = this.clock.now();
+    const ticketId = conversation.followUpTicketId;
+    const steps: TraceStep[] = [];
+    const blocks: MessageBlock[] = [];
+    const entities: Record<string, string> = ticketId ? { chamado: ticketId } : {};
+    let next: ConversationEntity;
+    let text: string;
+    let decision: Pick<DecisionTraceRecord, 'intent' | 'action' | 'rationale' | 'rulesApplied'>;
+    let returnedGroup: SupportLevel | null = null;
+
+    if (answer === 'RESOLVED') {
+      next = conversation.clearFollowUp().markResolvedByAgent(true);
+      text = 'Que bom que resolveu! Se precisar de mais alguma coisa, é só chamar.';
+
+      if (ticketId) {
+        const closed = await this.closeTicket(employee.id, ticketId);
+        steps.push(closed.step);
+        if (closed.ticket) {
+          blocks.push({ type: 'TICKET_CARD', ticket: toTicketSummary(closed.ticket) });
+          text = `Que bom que resolveu! Fechei o ${ticketId}. Se o problema voltar em até 7 dias, é só me avisar que eu reabro.`;
+        } else if (closed.alreadyClosed) {
+          text = `Que bom que resolveu! O ${ticketId} já estava encerrado.`;
+        } else {
+          text = `Que bom que resolveu! Não consegui fechar o ${ticketId} agora porque o sistema de chamados está instável; a equipe encerra por lá.`;
+        }
+      }
+
+      decision = {
+        intent: 'TICKET_UPDATE',
+        action: { type: 'FOLLOW_UP_RESOLVED', label: 'fechou o chamado como resolvido' },
+        rationale: 'O funcionário confirmou que o atendimento do analista resolveu o problema.',
+        rulesApplied: ['Acompanhamento: confirmar a solução com o funcionário antes de fechar'],
+      };
+    } else if (answer === 'CONTINUES') {
+      const group = conversation.handoffGroup ?? 'N2';
+      const handoff: HandoffDecision = {
+        reason: 'RETURNED',
+        group,
+        forcedByPolicy: false,
+        rule: handoffRule('RETURNED'),
+      };
+      const summary = `${employee.name} disse que o problema${ticketId ? ` do ${ticketId}` : ''} continua depois do atendimento.`;
+
+      next = conversation
+        .focusOn(ticketId ?? conversation.focusTicketId)
+        .handOff({ reason: 'RETURNED', summary, group }, now);
+      steps.push(await this.transferTicket(employee.id, next.focusTicketId, handoff, summary));
+      returnedGroup = group;
+      text = `Entendi. Devolvi a conversa para o ${GROUP_LABEL[group]}: um analista vai retomar o atendimento por aqui.`;
+      blocks.push({
+        type: 'NOTICE',
+        tone: 'warning',
+        text: `Conversa transferida para o ${GROUP_LABEL[group]}. O assistente fica pausado até o analista liberar.`,
+      });
+      decision = {
+        intent: 'HANDOFF',
+        action: { type: 'HANDOFF', label: `devolveu para o ${GROUP_LABEL[group]}` },
+        rationale: 'O funcionário disse que o problema continua depois do atendimento do analista.',
+        rulesApplied: [handoff.rule],
+      };
+    } else {
+      next = conversation.startNewProblem();
+      text = 'Certo! Me conta qual é o novo problema, com as suas palavras.';
+      decision = {
+        intent: 'CLARIFY',
+        action: { type: 'FOLLOW_UP_NEW_PROBLEM', label: 'pediu a descrição do novo problema' },
+        rationale: ticketId
+          ? `O funcionário tem outro problema; se virar um chamado novo, o ${ticketId} é cancelado.`
+          : 'O funcionário tem outro problema.',
+        rulesApplied: [],
+      };
+    }
+
+    const trace: DecisionTraceRecord = {
+      ...decision,
+      understood: { summary: 'Resposta à pergunta de acompanhamento.', entities },
+      confidenceScore: 1,
+      confidenceBand: 'HIGH',
+      steps,
+      model: 'nenhum (regra em código)',
+      inputTokens: 0,
+      outputTokens: 0,
+      latencyMs: 0,
+    };
+
+    await this.conversations.save(next);
+    const record = await this.messages.append(
+      {
+        conversationId: conversation.id,
+        author: 'AGENT',
+        authorId: null,
+        authorName: 'Nexo Assist',
+        text,
+        blocks,
+      },
+      trace,
+    );
+
+    if (returnedGroup) {
+      await this.messages.append({
+        conversationId: conversation.id,
+        author: 'SYSTEM',
+        authorId: null,
+        authorName: null,
+        text: `Voltou para ${GROUP_LABEL[returnedGroup]}: o problema continua · agent pausado`,
+        blocks: [],
+      });
+    }
+
+    return { record, trace };
+  }
+
+  private async closeTicket(
+    employeeId: string,
+    ticketId: string,
+  ): Promise<{ step: TraceStep; ticket: Ticket | null; alreadyClosed: boolean }> {
+    const started = Date.now();
+    const base = { id: 'follow-up-close', tool: 'tickets.close', label: 'fechou o chamado' };
+
+    try {
+      const { data, attempts } = await this.tickets.close(
+        employeeId,
+        ticketId,
+        { resolution: 'RESOLVED', reason: 'O funcionário confirmou que o problema foi resolvido.' },
+        `follow-up-close-${ticketId}-${started}`,
+      );
+      return {
+        step: {
+          ...base,
+          status: attempts > 1 ? 'RETRIED' : 'OK',
+          attempts,
+          durationMs: Date.now() - started,
+          outputSummary: `${ticketId} resolvido`,
+        },
+        ticket: data,
+        alreadyClosed: false,
+      };
+    } catch (error) {
+      const alreadyClosed = error instanceof TicketConflictError;
+      if (!alreadyClosed) this.logger.warn(`Não foi possível fechar ${ticketId}: ${String(error)}`);
+      return {
+        step: {
+          ...base,
+          status: alreadyClosed ? 'OK' : 'FAILED',
+          attempts: 1,
+          durationMs: Date.now() - started,
+          outputSummary: alreadyClosed ? `${ticketId} já estava encerrado` : 'chamado não fechado',
+        },
+        ticket: null,
+        alreadyClosed,
+      };
+    }
   }
 
   /** Marca o chamado em foco como transferido no legado; falha aqui não impede a transferência. */

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
-import { auth } from '@/lib/auth';
 import { ConsoleShell } from './_components/console-shell';
+import { auth } from '@/lib/auth';
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();

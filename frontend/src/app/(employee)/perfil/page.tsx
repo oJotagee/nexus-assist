@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-import { Skeleton } from '@/components/ui/skeleton';
 import { EmployeeTopbar } from '../_components/employee-topbar';
 import { PasswordCard } from './_components/password-card';
 import { getProfile } from './_data-access/get-profile';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export const metadata: Metadata = { title: 'Meu perfil' };
 

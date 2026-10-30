@@ -1,5 +1,5 @@
-import type { INestApplication } from '@nestjs/common';
 import { UnhandledExceptionFilter } from '@nexo/shared/http';
+import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 
 import { DomainExceptionFilter } from './presentation/filters/domain-exception.filter';

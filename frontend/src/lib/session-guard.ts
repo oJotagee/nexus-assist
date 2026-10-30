@@ -1,5 +1,5 @@
-import { isAxiosError } from 'axios';
 import { redirect } from 'next/navigation';
+import { isAxiosError } from 'axios';
 
 /**
  * Token do assist expirado (ou revogado) → volta para o login, em vez de mostrar erro genérico.

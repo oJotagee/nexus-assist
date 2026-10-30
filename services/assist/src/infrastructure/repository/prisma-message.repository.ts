@@ -1,12 +1,12 @@
 import type { AgentIntent, ConfidenceBand, MessageBlock, TraceStep } from '@nexo/shared';
 import { Injectable } from '@nestjs/common';
 
-import type { Prisma } from '@generated/prisma/client';
+import type { DecisionTraceRecord, MessageRecord, NewMessage } from '@/domain/entities/message';
 import type { DecisionTraceModel, MessageModel } from '@generated/prisma/models';
 import type { MessageRepository } from '@/application/ports/repositories.port';
-import type { DecisionTraceRecord, MessageRecord, NewMessage } from '@/domain/entities/message';
 import { countsTowardSessionLimit } from '@/domain/policies/session-limit';
 import { PrismaService } from '../prisma/prisma.service';
+import type { Prisma } from '@generated/prisma/client';
 
 function toMessage(row: MessageModel): MessageRecord {
   return {

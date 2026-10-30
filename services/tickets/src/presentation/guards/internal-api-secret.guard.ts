@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import type { ConfigType } from '@nestjs/config';
 import {
   type CanActivate,
   type ExecutionContext,
@@ -7,7 +8,6 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { ConfigType } from '@nestjs/config';
 
 import internalApiConfig from '@/infrastructure/config/internal-api.config';
 

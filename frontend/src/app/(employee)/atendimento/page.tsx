@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-import { auth } from '@/lib/auth';
-import { EmployeeTopbar } from '../_components/employee-topbar';
-import { ChatView } from './_components/chat-view';
-import { ChatSkeleton } from './_components/chat-skeleton';
 import { getActiveConversation } from './_data-access/get-active-conversation';
+import { EmployeeTopbar } from '../_components/employee-topbar';
+import { ChatSkeleton } from './_components/chat-skeleton';
+import { ChatView } from './_components/chat-view';
+import { auth } from '@/lib/auth';
 
 export const metadata: Metadata = { title: 'Atendimento' };
 

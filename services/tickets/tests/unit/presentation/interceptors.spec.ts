@@ -1,19 +1,19 @@
+import { delay, lastValueFrom, of, throwError } from 'rxjs';
 import { describe, expect, it, mock } from 'bun:test';
 import {
   type CallHandler,
   type ExecutionContext,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { delay, lastValueFrom, of, throwError } from 'rxjs';
 
+import { LegacyInstabilityInterceptor } from '@/presentation/interceptors/legacy-instability.interceptor';
+import { IdempotencyInterceptor } from '@/presentation/interceptors/idempotency.interceptor';
+import { InMemoryIdempotencyStore } from '@tests/unit/support/in-memory';
 import {
   IdempotencyKeyReuseError,
   IdempotencyRequestInProgressError,
   MissingIdempotencyKeyError,
 } from '@/domain/errors/idempotency.error';
-import { IdempotencyInterceptor } from '@/presentation/interceptors/idempotency.interceptor';
-import { LegacyInstabilityInterceptor } from '@/presentation/interceptors/legacy-instability.interceptor';
-import { InMemoryIdempotencyStore } from '@tests/unit/support/in-memory';
 
 type FakeRequest = {
   method: string;

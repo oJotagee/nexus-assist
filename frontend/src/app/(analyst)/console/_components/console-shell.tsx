@@ -1,10 +1,10 @@
 'use client';
 
+import { LogOut, MessagesSquare } from 'lucide-react';
 import type { SupportLevel } from '@nexo/shared';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, MessagesSquare } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 import { NexoMark } from '@/components/nexo-logo';
 import { cn, getInitials } from '@/lib/utils';

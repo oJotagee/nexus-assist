@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertTriangle, ArrowRight, Check } from 'lucide-react';
 import {
   TICKET_CATEGORY_LABEL,
   TICKET_PRIORITY_LABEL,
@@ -7,11 +8,10 @@ import {
   type MessageDto,
   type TicketDraftDto,
 } from '@nexo/shared';
-import { AlertTriangle, ArrowRight, Check } from 'lucide-react';
 
 import { AgentActionTrail } from '@/components/conversation/agent-action-trail';
-import { visibleReplyText } from '@/components/conversation/reply-text';
 import { StatusDot, TicketStatusBadge } from '@/components/conversation/status';
+import { visibleReplyText } from '@/components/conversation/reply-text';
 import { cn, formatTime } from '@/lib/utils';
 
 const DRAFT_STATUS = {

@@ -1,7 +1,7 @@
 import type { MessageBlock, TraceStep } from '@nexo/shared';
 
-import type { AgentTurnSink } from '@/application/ports/agent.port';
 import { TicketsUnavailableError } from '@/domain/errors/domain.error';
+import type { AgentTurnSink } from '@/application/ports/agent.port';
 
 export type StepOutcome<T> = { result: T; attempts?: number; summary: string };
 

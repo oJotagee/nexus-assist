@@ -1,7 +1,7 @@
 'use client';
 
-import type { ConversationDto, TicketSummaryDto } from '@nexo/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ConversationDto, TicketSummaryDto } from '@nexo/shared';
 import {
   AlertCircle,
   CheckCircle2,
@@ -14,15 +14,15 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { CONVERSATION_QUERY_KEY, type SendInput, useAgentStream } from '../_hooks/use-agent-stream';
+import { getActiveConversation } from '../_data-access/get-active-conversation';
+import { AgentReply, type BlockHandlers, MessageItem } from './message-item';
 import { DecisionPanel } from '@/components/conversation/decision-panel';
-import { StatusDot } from '@/components/conversation/status';
-import { Button } from '@/components/ui/button';
 import { EmployeeTopbar } from '../../_components/employee-topbar';
 import { startNewSession } from '../_actions/start-new-session';
-import { getActiveConversation } from '../_data-access/get-active-conversation';
-import { CONVERSATION_QUERY_KEY, type SendInput, useAgentStream } from '../_hooks/use-agent-stream';
+import { StatusDot } from '@/components/conversation/status';
+import { Button } from '@/components/ui/button';
 import { Composer } from './composer';
-import { AgentReply, type BlockHandlers, MessageItem } from './message-item';
 
 /** A conversa pode mudar no servidor a qualquer momento (analista assume, devolve ou encerra). */
 const POLLING_MS = 4000;

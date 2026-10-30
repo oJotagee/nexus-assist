@@ -24,6 +24,7 @@ export type TicketUpdateKind =
   | 'REOPENED'
   | 'TRANSFERRED';
 export type SupportGroup = 'N1' | 'N2';
+export type TicketResolution = 'RESOLVED' | 'CANCELLED';
 
 export type TicketUpdate = {
   kind: TicketUpdateKind;
@@ -226,6 +227,34 @@ export class TicketEntity {
         author: 'AGENT',
         authorName: null,
         body: `Transferido para ${groupLabel}. ${input.summary.trim()}`.trim(),
+        createdAt: now,
+      },
+    };
+  }
+
+  /**
+   * Encerra a pedido do funcionário: RESOLVED (resolvido; pode ser reaberto em até 7 dias) ou
+   * CANCELLED (fecha sem resolução, ex.: substituído por um chamado sobre outro problema).
+   */
+  close(
+    input: { resolution: TicketResolution; reason: string; author: TicketUpdateAuthor },
+    now: Date,
+  ): TicketChange {
+    if (!this.isOpen()) throw new TicketClosedError(this.id);
+
+    const resolved = input.resolution === 'RESOLVED';
+
+    return {
+      ticket: this.with({
+        status: resolved ? 'RESOLVED' : 'CLOSED',
+        resolvedAt: now,
+        lastUpdateAt: now,
+      }),
+      update: {
+        kind: 'STATUS_CHANGED',
+        author: input.author,
+        authorName: null,
+        body: input.reason.trim() || (resolved ? 'Resolvido.' : 'Cancelado.'),
         createdAt: now,
       },
     };

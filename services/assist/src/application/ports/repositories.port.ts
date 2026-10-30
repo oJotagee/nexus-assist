@@ -1,6 +1,7 @@
 import type { ConsoleFilter } from '@nexo/shared';
 
 import type { ConversationEntity } from '@/domain/entities/conversation.entity';
+import type { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
 import type {
   DecisionTraceRecord,
   EmployeeRecord,
@@ -9,7 +10,6 @@ import type {
   NewMessage,
   SessionRecord,
 } from '@/domain/entities/message';
-import type { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
 
 export const EMPLOYEE_REPOSITORY = Symbol('EMPLOYEE_REPOSITORY');
 export const CONVERSATION_REPOSITORY = Symbol('CONVERSATION_REPOSITORY');

@@ -1,10 +1,10 @@
+import { ChevronDown, ChevronsUp, Equal, OctagonAlert } from 'lucide-react';
 import {
   TICKET_PRIORITY_LABEL,
   TICKET_STATUS_LABEL,
   type TicketPriority,
   type TicketStatus,
 } from '@nexo/shared';
-import { ChevronDown, ChevronsUp, Equal, OctagonAlert } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -44,14 +44,14 @@ export function StatusDot({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap',
+        'inline-flex max-w-full items-center gap-1.5 text-xs font-medium whitespace-nowrap',
         classes.text,
         pill && cn('rounded-full px-2 py-0.5', classes.bg),
         className,
       )}
     >
       <span className={cn('size-1.5 shrink-0 rounded-full', classes.dot)} aria-hidden="true" />
-      {children}
+      <span className="min-w-0 truncate">{children}</span>
     </span>
   );
 }

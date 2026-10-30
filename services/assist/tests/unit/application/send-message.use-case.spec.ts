@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 import { SESSION_MESSAGE_LIMIT } from '@nexo/shared';
 
-import { ConversationViewBuilder } from '@/application/conversation-view.builder';
 import type { AgentRunner, AgentTurnInput, AgentTurnResult } from '@/application/ports/agent.port';
 import { SendMessageUseCase } from '@/application/use-cases/conversation/send-message.use-case';
+import { ConversationViewBuilder } from '@/application/conversation-view.builder';
 import { ConversationEntity } from '@/domain/entities/conversation.entity';
 import {
   ConversationNotFoundError,
@@ -11,6 +11,7 @@ import {
   SessionLimitReachedError,
 } from '@/domain/errors/domain.error';
 import { NOW, buildTicket, createRepositories } from '@tests/unit/support/in-memory';
+import { FOLLOW_UP_OPTIONS } from '@/domain/policies/follow-up';
 
 function turn(overrides: Partial<AgentTurnResult> = {}): AgentTurnResult {
   return {
@@ -251,5 +252,86 @@ describe('SendMessageUseCase', () => {
     await expect(
       useCase.execute({ conversationId: 'c1', employeeId: 'emp_bruno', text: 'oi' }, sink),
     ).rejects.toBeInstanceOf(ConversationNotFoundError);
+  });
+
+  describe('depois que o analista devolve a conversa', () => {
+    beforeEach(async () => {
+      const released = (await repos.conversations.findById('c1'))
+        ?.focusOn('INC-20311')
+        .handOff({ reason: 'USER_REQUESTED', summary: 'x', group: 'N1' }, NOW)
+        .assume('emp_rafael', NOW)
+        .releaseToAgent('emp_rafael', NOW);
+      if (!released) throw new Error('conversa não encontrada');
+      await repos.conversations.save(released);
+    });
+
+    it('"resolveu" fecha o chamado em código, sem chamar o modelo', async () => {
+      const { message, conversation } = await send(FOLLOW_UP_OPTIONS.resolved);
+
+      expect(runner.inputs).toHaveLength(0);
+      expect(repos.tickets.calls.find((c) => c.method === 'close')?.args[2]).toMatchObject({
+        resolution: 'RESOLVED',
+      });
+      expect(message?.text).toContain('Fechei o INC-20311');
+      expect(message?.blocks[0]).toMatchObject({ type: 'TICKET_CARD' });
+      expect(message?.trace?.steps[0]).toMatchObject({ tool: 'tickets.close', status: 'OK' });
+      expect(conversation.state).toBe('AGENT');
+      expect((await repos.conversations.findById('c1'))?.followUp).toBeNull();
+    });
+
+    it('"o problema continua" volta para a fila do mesmo grupo e avisa o console', async () => {
+      const { message, conversation } = await send(FOLLOW_UP_OPTIONS.continues);
+
+      expect(runner.inputs).toHaveLength(0);
+      expect(conversation.state).toBe('WAITING_ANALYST');
+      expect(conversation.handoffReason).toBe('RETURNED');
+      expect(conversation.handoffGroup).toBe('N1');
+      expect(repos.tickets.calls.find((c) => c.method === 'transfer')?.args[1]).toBe('INC-20311');
+      expect(message?.trace?.intent).toBe('HANDOFF');
+      expect(conversation.messages.at(-1)).toMatchObject({ author: 'SYSTEM' });
+    });
+
+    it('"tenho outro problema" sozinho pede a descrição', async () => {
+      const { message } = await send(FOLLOW_UP_OPTIONS.newProblem);
+
+      expect(runner.inputs).toHaveLength(0);
+      expect(message?.text).toContain('novo problema');
+      expect((await repos.conversations.findById('c1'))?.followUp).toBe('NEW_PROBLEM');
+    });
+
+    it('problema descrito direto vai para o agent, que sabe qual chamado seria substituído', async () => {
+      await send('o mouse parou de funcionar hoje de manhã');
+
+      expect(runner.inputs[0]?.previousTicketId).toBe('INC-20311');
+      expect((await repos.conversations.findById('c1'))?.followUp).toBe('NEW_PROBLEM');
+    });
+
+    it('se o rascunho cai no mesmo chamado, é o mesmo problema: volta para o analista', async () => {
+      await send(FOLLOW_UP_OPTIONS.newProblem);
+      runner.next = turn({
+        decision: { ...turn().decision, intent: 'TICKET_UPDATE' },
+        draft: {
+          id: 'd1',
+          mode: 'UPDATE',
+          targetTicketId: 'INC-20311',
+          type: 'INC',
+          title: 'Notebook lento',
+          description: 'Continua lento.',
+          category: 'HARDWARE',
+          priority: 'MEDIUM',
+          priorityRule: 'Média',
+          impact: 'SELF',
+          dueAt: NOW.toISOString(),
+          status: 'PENDING',
+          resultTicketId: null,
+        },
+      });
+
+      const { message, conversation } = await send('o notebook ainda trava quando abro o Excel');
+
+      expect(conversation.state).toBe('WAITING_ANALYST');
+      expect(conversation.handoffReason).toBe('RETURNED');
+      expect(message?.text).toContain('mesmo problema do INC-20311');
+    });
   });
 });

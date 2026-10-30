@@ -6,12 +6,13 @@ process.env.TICKETS_FAILURE_RATE = '0';
 process.env.TICKETS_MAX_LATENCY_MS = '0';
 
 import 'reflect-metadata';
+
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
-import { AppModule } from '@/app.module';
-import { configureApp } from '@/app.setup';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { configureApp } from '@/app.setup';
+import { AppModule } from '@/app.module';
 
 describe('Tickets API (integration)', () => {
   const owner = `emp_it_${crypto.randomUUID().slice(0, 8)}`;

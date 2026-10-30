@@ -16,16 +16,16 @@ import { config } from 'dotenv';
 
 config({ path: `${import.meta.dir}/../../.env` });
 
-import { mkdir, writeFile } from 'node:fs/promises';
 import type { MessageBlock, TraceStep } from '@nexo/shared';
+import { mkdir, writeFile } from 'node:fs/promises';
 
-import { ConversationEntity } from '@/domain/entities/conversation.entity';
-import { evaluateHandoff } from '@/domain/policies/handoff-policy';
+import { CRITERIA, type ScenarioRun, scoreScenario, summarizeByCriterion } from './score';
+import { NOW, at, buildTicket, createRepositories } from '../unit/support/in-memory';
 import { agentModelEnv, createAgentModel } from '@/infrastructure/agent/model';
 import { NexoAgentRunner } from '@/infrastructure/agent/nexo-agent.runner';
-import { NOW, at, buildTicket, createRepositories } from '../unit/support/in-memory';
+import { ConversationEntity } from '@/domain/entities/conversation.entity';
+import { evaluateHandoff } from '@/domain/policies/handoff-policy';
 import { type EvalScenario, SCENARIOS } from './scenarios';
-import { CRITERIA, type ScenarioRun, scoreScenario, summarizeByCriterion } from './score';
 
 const args = process.argv.slice(2);
 const flag = (name: string) => {

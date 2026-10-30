@@ -1,3 +1,6 @@
+import type { ConfigType } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import {
   type CanActivate,
   type ExecutionContext,
@@ -7,9 +10,6 @@ import {
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { ConfigType } from '@nestjs/config';
-import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
 
 import type { SessionTokenPayload } from '@/application/ports/services.port';
 import jwtConfig from '@/infrastructure/config/jwt.config';

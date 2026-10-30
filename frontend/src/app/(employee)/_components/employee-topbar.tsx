@@ -1,8 +1,8 @@
 import { ChevronRight, LogOut, MessageSquare, UserRound } from 'lucide-react';
 import Link from 'next/link';
 
-import { NexoLogo } from '@/components/nexo-logo';
 import { signOutAction } from '../_actions/sign-out';
+import { NexoLogo } from '@/components/nexo-logo';
 
 type EmployeeTopbarProps = {
   title: string;

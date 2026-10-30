@@ -1,8 +1,8 @@
-import type { UserDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
+import type { UserDto } from '@nexo/shared';
 
-import { EmployeeNotFoundError } from '@/domain/errors/domain.error';
 import { EMPLOYEE_REPOSITORY, type EmployeeRepository } from '../../ports/repositories.port';
+import { EmployeeNotFoundError } from '@/domain/errors/domain.error';
 import { toUserDto } from '../../presenters';
 
 @Injectable()

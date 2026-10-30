@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   MESSAGE_MAX_LENGTH,
   TICKET_CATEGORIES,
@@ -5,7 +6,6 @@ import {
   type TicketCategory,
   type TicketPriority,
 } from '@nexo/shared';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsEmail,

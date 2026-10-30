@@ -5,6 +5,12 @@ import {
   NotAssignedAnalystError,
 } from '../errors/domain.error';
 
+/**
+ * Acompanhamento depois que o analista devolve a conversa: AWAITING_ANSWER (o agent perguntou se
+ * pode fechar) e NEW_PROBLEM (o funcionário disse que tem outro problema).
+ */
+export type FollowUpState = 'AWAITING_ANSWER' | 'NEW_PROBLEM';
+
 type ConversationProps = {
   id: string;
   employeeId: string;
@@ -15,6 +21,8 @@ type ConversationProps = {
   handoffGroup: SupportLevel | null;
   handoffAt: Date | null;
   focusTicketId: string | null;
+  followUp: FollowUpState | null;
+  followUpTicketId: string | null;
   resolvedByAgent: boolean;
   lastMessageAt: Date;
   createdAt: Date;
@@ -29,6 +37,9 @@ export type ConversationSnapshot = Readonly<ConversationProps>;
  *     ▲                     │                          │
  *     └──── release ────────┴──────────────────────────┘
  *   CLOSED ──nova mensagem do funcionário──▶ AGENT
+ *
+ * Ao devolver ao agent, ele pergunta se pode fechar o chamado (followUp). Se o problema continua,
+ * a conversa volta para a fila com o motivo RETURNED.
  *
  * O agent só responde em AGENT. Nos outros estados, a mensagem do funcionário é só gravada.
  */
@@ -46,6 +57,8 @@ export class ConversationEntity {
       handoffGroup: null,
       handoffAt: null,
       focusTicketId: null,
+      followUp: null,
+      followUpTicketId: null,
       resolvedByAgent: false,
       lastMessageAt: now,
       createdAt: now,
@@ -71,6 +84,15 @@ export class ConversationEntity {
   get focusTicketId(): string | null {
     return this.props.focusTicketId;
   }
+  get handoffGroup(): SupportLevel | null {
+    return this.props.handoffGroup;
+  }
+  get followUp(): FollowUpState | null {
+    return this.props.followUp;
+  }
+  get followUpTicketId(): string | null {
+    return this.props.followUpTicketId;
+  }
 
   isOwnedBy(employeeId: string): boolean {
     return this.props.employeeId === employeeId;
@@ -91,6 +113,8 @@ export class ConversationEntity {
         handoffSummary: null,
         handoffGroup: null,
         handoffAt: null,
+        followUp: null,
+        followUpTicketId: null,
         resolvedByAgent: false,
         lastMessageAt: now,
       });
@@ -113,6 +137,8 @@ export class ConversationEntity {
       handoffSummary: input.summary.trim(),
       handoffGroup: input.group,
       handoffAt: now,
+      followUp: null,
+      followUpTicketId: null,
       resolvedByAgent: false,
       lastMessageAt: now,
     });
@@ -129,6 +155,10 @@ export class ConversationEntity {
     return this.with({ state: 'WITH_ANALYST', assignedAnalystId: analystId, lastMessageAt: now });
   }
 
+  /**
+   * Devolve ao agent, que pergunta se pode fechar o chamado em foco (AWAITING_ANSWER). O grupo da
+   * transferência é mantido para o caso de o problema continuar e a conversa voltar.
+   */
   releaseToAgent(analystId: string, now: Date): ConversationEntity {
     if (this.props.state === 'AGENT' || this.props.state === 'CLOSED') {
       throw new InvalidConversationTransitionError('A conversa não está com um analista.');
@@ -140,10 +170,21 @@ export class ConversationEntity {
       assignedAnalystId: null,
       handoffReason: null,
       handoffSummary: null,
-      handoffGroup: null,
       handoffAt: null,
+      followUp: 'AWAITING_ANSWER',
+      followUpTicketId: this.props.focusTicketId,
       lastMessageAt: now,
     });
+  }
+
+  /** O funcionário disse que tem outro problema: o próximo chamado criado substitui o anterior. */
+  startNewProblem(): ConversationEntity {
+    return this.with({ followUp: 'NEW_PROBLEM' });
+  }
+
+  /** Encerra o acompanhamento (problema resolvido, chamado substituído ou conversa transferida). */
+  clearFollowUp(): ConversationEntity {
+    return this.with({ followUp: null, followUpTicketId: null });
   }
 
   close(analystId: string, now: Date): ConversationEntity {
@@ -152,7 +193,12 @@ export class ConversationEntity {
     }
     this.assertAssignedOrUnassigned(analystId);
 
-    return this.with({ state: 'CLOSED', lastMessageAt: now });
+    return this.with({
+      state: 'CLOSED',
+      followUp: null,
+      followUpTicketId: null,
+      lastMessageAt: now,
+    });
   }
 
   assertCanAnalystReply(analystId: string): void {

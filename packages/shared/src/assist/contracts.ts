@@ -23,13 +23,19 @@ export type UserDto = {
 };
 
 export type ConversationState = 'AGENT' | 'WAITING_ANALYST' | 'WITH_ANALYST' | 'CLOSED';
-export type HandoffReason = 'USER_REQUESTED' | 'CRITICAL' | 'OVERDUE' | 'LOW_CONFIDENCE';
+export type HandoffReason =
+  | 'USER_REQUESTED'
+  | 'CRITICAL'
+  | 'OVERDUE'
+  | 'LOW_CONFIDENCE'
+  | 'RETURNED';
 
 export const HANDOFF_REASON_LABEL: Record<HandoffReason, string> = {
   USER_REQUESTED: 'Pedido do funcionário',
   CRITICAL: 'Caso crítico',
   OVERDUE: 'Chamado com prazo vencido',
   LOW_CONFIDENCE: 'Agent sem segurança para decidir',
+  RETURNED: 'Voltou: o problema continua',
 };
 
 export type TicketSummaryDto = {

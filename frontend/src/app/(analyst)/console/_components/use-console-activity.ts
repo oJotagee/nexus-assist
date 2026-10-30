@@ -1,7 +1,7 @@
 'use client';
 
-import type { ConsoleConversationItemDto } from '@nexo/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ConsoleConversationItemDto } from '@nexo/shared';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'nexo-console-seen';
@@ -64,9 +64,18 @@ export function useConsoleActivity(
     if (waitingIds.current) {
       for (const item of items) {
         if (waiting.has(item.id) && !waitingIds.current.has(item.id)) {
-          toast.info(`${item.employee.name} está esperando um atendente`, {
-            id: `waiting-${item.id}`,
-          });
+          if (item.handoffReason === 'RETURNED') {
+            toast.warning(`${item.employee.name} voltou: o problema continua`, {
+              id: `waiting-${item.id}`,
+              description: item.focusTicketId
+                ? `${item.focusTicketId} voltou para a fila.`
+                : 'A conversa voltou para a fila.',
+            });
+          } else {
+            toast.info(`${item.employee.name} está esperando um atendente`, {
+              id: `waiting-${item.id}`,
+            });
+          }
         }
       }
     }

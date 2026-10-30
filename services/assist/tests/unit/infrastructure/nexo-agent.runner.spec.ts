@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 import type { MessageBlock, TraceStep } from '@nexo/shared';
 
-import type { AgentTurnInput } from '@/application/ports/agent.port';
-import { AgentUnavailableError } from '@/application/ports/agent.port';
-import { ConversationEntity } from '@/domain/entities/conversation.entity';
-import { NexoAgentRunner } from '@/infrastructure/agent/nexo-agent.runner';
 import { NOW, at, buildTicket, createRepositories } from '@tests/unit/support/in-memory';
 import { hangingModel, scriptedModel } from '@tests/unit/support/scripted-model';
+import { ConversationEntity } from '@/domain/entities/conversation.entity';
+import { NexoAgentRunner, extractInlineOptions } from '@/infrastructure/agent/nexo-agent.runner';
+import { AgentUnavailableError } from '@/application/ports/agent.port';
+import type { AgentTurnInput } from '@/application/ports/agent.port';
 
 describe('NexoAgentRunner (Mastra com modelo roteirizado)', () => {
   let repos: ReturnType<typeof createRepositories>;
@@ -285,5 +285,43 @@ describe('NexoAgentRunner (Mastra com modelo roteirizado)', () => {
     );
 
     await expect(unconfigured.run(input(), sink)).rejects.toBeInstanceOf(AgentUnavailableError);
+  });
+
+  it('opções escritas no texto viram botões de verdade', async () => {
+    const result = await runner([
+      {
+        text: 'Pelo artigo, basta reinstalar o perfil da VPN. Isso resolveu?\n[opções: Resolveu | Não resolveu]',
+      },
+    ]).run(input({ userMessage: 'erro 809 na VPN' }), sink);
+
+    expect(result.text).toBe('Pelo artigo, basta reinstalar o perfil da VPN.');
+    expect(result.blocks).toEqual([
+      {
+        type: 'QUICK_REPLIES',
+        question: 'Isso resolveu?',
+        options: ['Resolveu', 'Não resolveu'],
+        answered: null,
+      },
+    ]);
+    expect(events.blocks).toEqual(result.blocks);
+  });
+});
+
+describe('extractInlineOptions', () => {
+  it('sem pergunta no texto, usa uma pergunta genérica', () => {
+    expect(extractInlineOptions('[opções: Sim | Não]')).toEqual({
+      text: '',
+      block: {
+        type: 'QUICK_REPLIES',
+        question: 'Escolha uma opção:',
+        options: ['Sim', 'Não'],
+        answered: null,
+      },
+    });
+  });
+
+  it('texto sem opções fica como está', () => {
+    expect(extractInlineOptions('Certo, vou verificar.')).toBeNull();
+    expect(extractInlineOptions('[opções: só uma]')).toBeNull();
   });
 });

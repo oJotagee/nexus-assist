@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 
-import { createAgentModel, resolveProvider } from '@/infrastructure/agent/model';
 import { isQuotaError, isTimeoutError, toError } from '@/infrastructure/agent/nexo-agent.runner';
+import { createAgentModel, resolveProvider } from '@/infrastructure/agent/model';
 
 describe('createAgentModel', () => {
   it('usa o Gemini gratuito por padrão', () => {

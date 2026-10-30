@@ -2,13 +2,13 @@ import { SESSION_MESSAGE_LIMIT } from '@nexo/shared';
 import { describe, expect, it } from 'bun:test';
 
 import { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
+import { assertCanSend } from '@/domain/policies/session-limit';
+import { NOW, at } from '@tests/unit/support/in-memory';
 import {
   DraftNotPendingError,
   InvalidDraftError,
   SessionLimitReachedError,
 } from '@/domain/errors/domain.error';
-import { assertCanSend } from '@/domain/policies/session-limit';
-import { NOW, at } from '@tests/unit/support/in-memory';
 
 const draft = (overrides: Partial<Parameters<typeof TicketDraftEntity.create>[0]> = {}) =>
   TicketDraftEntity.create(

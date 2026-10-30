@@ -1,12 +1,12 @@
 'use client';
 
 import { LogOut, MessageSquare, UserRound } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
+import { signOutAction } from '../_actions/sign-out';
 import { NexoLogo } from '@/components/nexo-logo';
 import { cn, getInitials } from '@/lib/utils';
-import { signOutAction } from '../_actions/sign-out';
 
 const NAV = [
   { href: '/atendimento', label: 'Atendimento', icon: MessageSquare },

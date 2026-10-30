@@ -1,17 +1,17 @@
-import type { AgentStreamEvent } from '@nexo/shared';
 import { Body, Controller, Logger, Param, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import type { AgentStreamEvent } from '@nexo/shared';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 
-import { AgentUnavailableError } from '@/application/ports/agent.port';
 import { SendMessageUseCase } from '@/application/use-cases/conversation/send-message.use-case';
-import { INTERNAL_ERROR_MESSAGE } from '@nexo/shared/http';
-import { RATE_LIMITS } from '@/infrastructure/config/rate-limit';
-import { CurrentUser } from '../decorators/current-user.decorator';
-import { SendMessageRequestDto } from '../dtos/requests.dto';
-import { DOMAIN_ERRORS } from '../filters/domain-exception.filter';
 import { type AuthUser, JwtAuthGuard, Roles } from '../guards/jwt-auth.guard';
+import { AgentUnavailableError } from '@/application/ports/agent.port';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { DOMAIN_ERRORS } from '../filters/domain-exception.filter';
+import { RATE_LIMITS } from '@/infrastructure/config/rate-limit';
+import { SendMessageRequestDto } from '../dtos/requests.dto';
+import { INTERNAL_ERROR_MESSAGE } from '@nexo/shared/http';
 
 /**
  * POST /conversations/:id/messages responde em Server-Sent Events: a mensagem do funcionário

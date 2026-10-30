@@ -2,6 +2,7 @@ import type { ConversationDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import { ConversationViewBuilder } from '../../conversation-view.builder';
+import { loadOwnedDraft } from './load-owned-draft';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
@@ -10,7 +11,6 @@ import {
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from '../../ports/repositories.port';
-import { loadOwnedDraft } from './load-owned-draft';
 
 @Injectable()
 export class CancelDraftUseCase {

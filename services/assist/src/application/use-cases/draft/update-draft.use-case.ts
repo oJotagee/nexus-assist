@@ -1,16 +1,16 @@
 import type { ConversationDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
-import type { DraftEdit } from '@/domain/entities/ticket-draft.entity';
 import { ConversationViewBuilder } from '../../conversation-view.builder';
+import type { DraftEdit } from '@/domain/entities/ticket-draft.entity';
+import { CLOCK, type Clock } from '../../ports/services.port';
+import { loadOwnedDraft } from './load-owned-draft';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
   DRAFT_REPOSITORY,
   type DraftRepository,
 } from '../../ports/repositories.port';
-import { CLOCK, type Clock } from '../../ports/services.port';
-import { loadOwnedDraft } from './load-owned-draft';
 
 type UpdateDraftInput = {
   conversationId: string;

@@ -1,7 +1,7 @@
-import type { UserDto } from '@nexo/shared';
-import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import type { UserDto } from '@nexo/shared';
 import { isAxiosError } from 'axios';
+import NextAuth from 'next-auth';
 
 import { api } from './api';
 

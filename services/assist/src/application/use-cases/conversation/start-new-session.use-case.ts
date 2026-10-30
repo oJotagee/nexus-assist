@@ -2,13 +2,13 @@ import type { ConversationDto } from '@nexo/shared';
 import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { ConversationViewBuilder } from '../../conversation-view.builder';
+import { loadOwnedConversation } from './load-owned-conversation';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from '../../ports/repositories.port';
-import { loadOwnedConversation } from './load-owned-conversation';
 
 export const SESSION_SUMMARIZER = Symbol('SESSION_SUMMARIZER');
 

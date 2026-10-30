@@ -1,13 +1,13 @@
 import type { TicketSummaryDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
+import { TICKETS_GATEWAY, type TicketsGateway } from '../../ports/tickets-gateway.port';
 import { ConversationNotFoundError } from '@/domain/errors/domain.error';
+import { toTicketSummary } from '../../presenters';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
 } from '../../ports/repositories.port';
-import { TICKETS_GATEWAY, type TicketsGateway } from '../../ports/tickets-gateway.port';
-import { toTicketSummary } from '../../presenters';
 
 /**
  * Painel "Chamados da Ana" no console. O analista só chega aos chamados de quem está na

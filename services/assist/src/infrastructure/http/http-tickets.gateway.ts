@@ -1,7 +1,8 @@
+import axios, { type AxiosInstance, type AxiosRequestConfig, isAxiosError } from 'axios';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import axios, { type AxiosInstance, type AxiosRequestConfig, isAxiosError } from 'axios';
 
+import ticketsApiConfig from '../config/tickets-api.config';
 import type {
   CreateTicketCommand,
   GatewayResult,
@@ -15,7 +16,6 @@ import {
   TicketNotFoundError,
   TicketsUnavailableError,
 } from '@/domain/errors/domain.error';
-import ticketsApiConfig from '../config/tickets-api.config';
 
 type RawTicket = Omit<Ticket, 'createdAt' | 'lastUpdateAt' | 'resolvedAt' | 'deadline'> & {
   createdAt: string;
@@ -122,6 +122,20 @@ export class HttpTicketsGateway implements TicketsGateway {
     key: string,
   ) {
     return this.write(`${this.ticketUrl(employeeId, ticketId)}/transfer`, transfer, key, ticketId);
+  }
+
+  close(
+    employeeId: string,
+    ticketId: string,
+    close: { resolution: 'RESOLVED' | 'CANCELLED'; reason: string },
+    key: string,
+  ) {
+    return this.write(
+      `${this.ticketUrl(employeeId, ticketId)}/close`,
+      { ...close, author: 'AGENT' },
+      key,
+      ticketId,
+    );
   }
 
   private async write(

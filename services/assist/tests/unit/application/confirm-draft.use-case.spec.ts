@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ConversationViewBuilder } from '@/application/conversation-view.builder';
 import { ConfirmDraftUseCase } from '@/application/use-cases/draft/confirm-draft.use-case';
+import { ConversationViewBuilder } from '@/application/conversation-view.builder';
 import { ConversationEntity } from '@/domain/entities/conversation.entity';
 import { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
 import {
@@ -135,5 +135,44 @@ describe('ConfirmDraftUseCase', () => {
       ConversationNotFoundError,
     );
     expect(repos.tickets.calls).toHaveLength(0);
+  });
+
+  it('depois de "tenho outro problema", o chamado novo cancela o que o analista atendeu', async () => {
+    repos.tickets.tickets.push(buildTicket({ status: 'IN_PROGRESS' }));
+    const returned = (await repos.conversations.findById('c1'))
+      ?.focusOn('INC-20311')
+      .handOff({ reason: 'OVERDUE', summary: 'x', group: 'N2' }, NOW)
+      .assume('emp_rafael', NOW)
+      .releaseToAgent('emp_rafael', NOW)
+      .startNewProblem();
+    if (!returned) throw new Error('conversa não encontrada');
+    await repos.conversations.save(returned);
+    await seedDraft();
+
+    const conversation = await useCase.execute(input);
+
+    expect(repos.tickets.calls.find((call) => call.method === 'close')?.args).toEqual([
+      'emp_ana',
+      'INC-20311',
+      {
+        resolution: 'CANCELLED',
+        reason: 'Substituído pelo INC-20341: o funcionário relatou outro problema.',
+      },
+    ]);
+    expect(conversation.messages.at(-1)?.text).toContain('Cancelei o INC-20311');
+    expect(conversation.messages.at(-1)?.trace?.steps.map((step) => step.tool)).toEqual([
+      'tickets.create',
+      'tickets.close',
+    ]);
+    expect((await repos.conversations.findById('c1'))?.followUp).toBeNull();
+  });
+
+  it('sem "outro problema" pendente, criar um chamado não cancela nada', async () => {
+    repos.tickets.tickets.push(buildTicket());
+    await seedDraft();
+
+    await useCase.execute(input);
+
+    expect(repos.tickets.calls.some((call) => call.method === 'close')).toBe(false);
   });
 });

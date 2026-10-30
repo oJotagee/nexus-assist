@@ -26,6 +26,8 @@ export type AgentTurnInput = {
   sessionSummary: string | null;
   focusTicketId: string | null;
   pendingDraft: TicketDraftDto | null;
+  /** Chamado que o analista acabou de atender, quando o funcionário disse ter outro problema. */
+  previousTicketId?: string | null;
 };
 
 /** Eventos em tempo real do turno (viram SSE para o chat). */

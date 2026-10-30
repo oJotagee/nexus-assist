@@ -1,3 +1,5 @@
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   TICKET_CATEGORIES,
   TICKET_IMPACTS,
@@ -8,10 +10,12 @@ import {
   type TicketPriority,
   type TicketType,
 } from '@nexo/shared';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
-import type { SupportGroup, TicketUpdateAuthor } from '@/domain/entities/ticket.entity';
+import type {
+  SupportGroup,
+  TicketResolution,
+  TicketUpdateAuthor,
+} from '@/domain/entities/ticket.entity';
 
 const WRITE_AUTHORS = ['REQUESTER', 'AGENT', 'ANALYST'] as const;
 const SUPPORT_GROUPS = ['N1', 'N2'] as const;
@@ -100,4 +104,21 @@ export class TransferTicketRequestDto {
   @IsNotEmpty()
   @MaxLength(2000)
   summary: string;
+}
+
+export class CloseTicketRequestDto {
+  @ApiProperty({ enum: ['RESOLVED', 'CANCELLED'] })
+  @IsIn(['RESOLVED', 'CANCELLED'])
+  resolution: TicketResolution;
+
+  @ApiProperty({ example: 'O funcionário confirmou que o problema foi resolvido.' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  reason: string;
+
+  @ApiPropertyOptional({ enum: WRITE_AUTHORS, default: 'AGENT' })
+  @IsOptional()
+  @IsIn(WRITE_AUTHORS)
+  author: TicketUpdateAuthor = 'AGENT';
 }

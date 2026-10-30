@@ -1,19 +1,19 @@
+import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type {
   ConsoleConversationDto,
   ConsoleConversationListDto,
   TicketSummaryDto,
 } from '@nexo/shared';
-import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+import { ListConsoleConversationsUseCase } from '@/application/use-cases/console/list-console-conversations.use-case';
 import { ChangeConversationStateUseCase } from '@/application/use-cases/console/change-conversation-state.use-case';
 import { GetConsoleConversationUseCase } from '@/application/use-cases/console/get-console-conversation.use-case';
 import { GetEmployeeTicketsUseCase } from '@/application/use-cases/console/get-employee-tickets.use-case';
-import { ListConsoleConversationsUseCase } from '@/application/use-cases/console/list-console-conversations.use-case';
 import { SendAnalystMessageUseCase } from '@/application/use-cases/console/send-analyst-message.use-case';
-import { CurrentUser } from '../decorators/current-user.decorator';
 import { AnalystMessageRequestDto, ConsoleListQueryDto } from '../dtos/requests.dto';
 import { type AuthUser, JwtAuthGuard, Roles } from '../guards/jwt-auth.guard';
+import { CurrentUser } from '../decorators/current-user.decorator';
 
 @ApiTags('console')
 @ApiBearerAuth()

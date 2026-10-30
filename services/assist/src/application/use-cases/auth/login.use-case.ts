@@ -1,9 +1,9 @@
-import type { UserDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
+import type { UserDto } from '@nexo/shared';
 
-import { InvalidCredentialsError } from '@/domain/errors/domain.error';
 import { EMPLOYEE_REPOSITORY, type EmployeeRepository } from '../../ports/repositories.port';
 import { TOKEN_ISSUER, type TokenIssuer } from '../../ports/services.port';
+import { InvalidCredentialsError } from '@/domain/errors/domain.error';
 import { toUserDto } from '../../presenters';
 
 type LoginInput = { email: string; password: string };

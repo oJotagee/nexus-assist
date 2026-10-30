@@ -1,8 +1,8 @@
+import type { ConversationRepository, DraftRepository } from '../../ports/repositories.port';
 import type { ConversationEntity } from '@/domain/entities/conversation.entity';
+import { loadOwnedConversation } from '../conversation/load-owned-conversation';
 import type { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
 import { DraftNotFoundError } from '@/domain/errors/domain.error';
-import type { ConversationRepository, DraftRepository } from '../../ports/repositories.port';
-import { loadOwnedConversation } from '../conversation/load-owned-conversation';
 
 export async function loadOwnedDraft(
   repositories: { conversations: ConversationRepository; drafts: DraftRepository },

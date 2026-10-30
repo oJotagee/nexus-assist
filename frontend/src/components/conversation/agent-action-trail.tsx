@@ -1,7 +1,7 @@
 'use client';
 
-import type { ConfidenceBand, TraceStep } from '@nexo/shared';
 import { Check, Info, Loader2, RotateCw, X } from 'lucide-react';
+import type { ConfidenceBand, TraceStep } from '@nexo/shared';
 
 import { cn } from '@/lib/utils';
 

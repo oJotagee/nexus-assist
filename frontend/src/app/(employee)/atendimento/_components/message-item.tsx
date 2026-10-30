@@ -12,10 +12,10 @@ import { AlertTriangle, Info } from 'lucide-react';
 import { AgentActionTrail } from '@/components/conversation/agent-action-trail';
 import { visibleReplyText } from '@/components/conversation/reply-text';
 import { TicketCard } from '@/components/conversation/ticket-card';
-import { cn, formatTime } from '@/lib/utils';
-import { QuickReplies } from './quick-replies';
-import { TicketDraftCard } from './ticket-draft-card';
 import { TicketSelectList } from './ticket-select-list';
+import { TicketDraftCard } from './ticket-draft-card';
+import { QuickReplies } from './quick-replies';
+import { cn, formatTime } from '@/lib/utils';
 
 export type BlockHandlers = {
   conversationId: string;

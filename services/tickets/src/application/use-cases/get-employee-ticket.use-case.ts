@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { CLOCK, type Clock } from '../ports/clock.port';
 import { TICKET_REPOSITORY, type TicketRepository } from '../ports/ticket-repository.port';
 import { type TicketDetailView, toTicketView } from '../ticket-view';
+import { CLOCK, type Clock } from '../ports/clock.port';
 import { findOwnedTicket } from './find-owned-ticket';
 
 type GetEmployeeTicketInput = {

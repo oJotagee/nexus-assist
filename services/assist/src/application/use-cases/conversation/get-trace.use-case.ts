@@ -2,13 +2,13 @@ import type { DecisionTraceDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import { TraceNotFoundError } from '@/domain/errors/domain.error';
+import { toTraceDto } from '../../presenters';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from '../../ports/repositories.port';
-import { toTraceDto } from '../../presenters';
 
 type GetTraceInput = {
   messageId: string;

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
-import { NexoLogo } from '@/components/nexo-logo';
 import { LoginForm } from './_components/login-form';
 import { LoginHero } from './_components/login-hero';
+import { NexoLogo } from '@/components/nexo-logo';
 
 export const metadata: Metadata = { title: 'Entrar' };
 

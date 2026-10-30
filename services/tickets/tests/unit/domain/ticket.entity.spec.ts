@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 
+import { NOW, at, buildTicket } from '@tests/unit/support/builders';
 import { TicketEntity } from '@/domain/entities/ticket.entity';
 import {
   InvalidTicketError,
   TicketCannotBeReopenedError,
   TicketClosedError,
 } from '@/domain/errors/ticket.error';
-import { NOW, at, buildTicket } from '@tests/unit/support/builders';
 
 describe('TicketEntity', () => {
   describe('create', () => {
@@ -131,6 +131,37 @@ describe('TicketEntity', () => {
       const closed = buildTicket({ status: 'CLOSED', resolvedAt: at('2026-10-01T10:00:00') });
 
       expect(() => closed.transfer({ group: 'N1', summary: 'x' }, NOW)).toThrow(TicketClosedError);
+    });
+  });
+
+  describe('close', () => {
+    it('resolvido pelo funcionário: fica reabrível por 7 dias', () => {
+      const { ticket, update } = buildTicket().close(
+        { resolution: 'RESOLVED', reason: 'Confirmou que resolveu.', author: 'AGENT' },
+        NOW,
+      );
+
+      expect(ticket.status).toBe('RESOLVED');
+      expect(ticket.resolvedAt).toEqual(NOW);
+      expect(ticket.canReopen(NOW)).toBe(true);
+      expect(update).toMatchObject({ kind: 'STATUS_CHANGED', body: 'Confirmou que resolveu.' });
+    });
+
+    it('cancelado: fecha sem resolução e não é reabrível', () => {
+      const { ticket } = buildTicket().close(
+        { resolution: 'CANCELLED', reason: 'Substituído por outro chamado.', author: 'AGENT' },
+        NOW,
+      );
+
+      expect(ticket.status).toBe('CLOSED');
+      expect(ticket.canReopen(NOW)).toBe(false);
+    });
+
+    it('não fecha o que já está encerrado', () => {
+      const resolved = buildTicket({ status: 'RESOLVED', resolvedAt: at('2026-10-26T10:00:00') });
+      expect(() =>
+        resolved.close({ resolution: 'CANCELLED', reason: 'x', author: 'AGENT' }, NOW),
+      ).toThrow(TicketClosedError);
     });
   });
 });

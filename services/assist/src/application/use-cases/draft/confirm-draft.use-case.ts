@@ -1,15 +1,18 @@
+import { Inject, Injectable } from '@nestjs/common';
 import {
   type ConversationDto,
   TICKET_PRIORITY_LABEL,
   type TraceStep,
   formatDueAt,
 } from '@nexo/shared';
-import { Inject, Injectable } from '@nestjs/common';
 
-import type { DecisionTraceRecord } from '@/domain/entities/message';
-import { DraftNotPendingError } from '@/domain/errors/domain.error';
 import type { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
 import { ConversationViewBuilder } from '../../conversation-view.builder';
+import type { DecisionTraceRecord } from '@/domain/entities/message';
+import { DraftNotPendingError } from '@/domain/errors/domain.error';
+import { CLOCK, type Clock } from '../../ports/services.port';
+import { loadOwnedDraft } from './load-owned-draft';
+import { toTicketSummary } from '../../presenters';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
@@ -18,15 +21,12 @@ import {
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from '../../ports/repositories.port';
-import { CLOCK, type Clock } from '../../ports/services.port';
 import {
   type GatewayResult,
   TICKETS_GATEWAY,
   type Ticket,
   type TicketsGateway,
 } from '../../ports/tickets-gateway.port';
-import { toTicketSummary } from '../../presenters';
-import { loadOwnedDraft } from './load-owned-draft';
 
 type ConfirmDraftInput = { conversationId: string; draftId: string; employeeId: string };
 
@@ -65,17 +65,33 @@ export class ConfirmDraftUseCase {
     if (!(await this.drafts.confirmIfPending(draft.id, ticket.id)))
       return this.view.build(conversation);
 
-    await this.conversations.save(conversation.focusOn(ticket.id));
+    const replaced =
+      draft.mode === 'CREATE' &&
+      conversation.followUp === 'NEW_PROBLEM' &&
+      conversation.followUpTicketId &&
+      conversation.followUpTicketId !== ticket.id
+        ? await this.cancelReplaced(input.employeeId, conversation.followUpTicketId, ticket.id)
+        : null;
+
+    const next = replaced ? conversation.clearFollowUp() : conversation;
+    const trace = this.trace(draft, result, Date.now() - startedAt);
+    if (replaced) trace.steps.push(replaced.step);
+
+    let text = this.confirmationText(draft, ticket, now);
+    if (replaced?.cancelled)
+      text += ` Cancelei o ${replaced.ticketId}, já que este é outro problema.`;
+
+    await this.conversations.save(next.focusOn(ticket.id));
     await this.messages.append(
       {
         conversationId: conversation.id,
         author: 'AGENT',
         authorId: null,
         authorName: 'Nexo Assist',
-        text: this.confirmationText(draft, ticket, now),
+        text,
         blocks: [{ type: 'TICKET_CARD', ticket: toTicketSummary(ticket) }],
       },
-      this.trace(draft, result, Date.now() - startedAt),
+      trace,
     );
 
     return this.view.build(conversation);
@@ -112,6 +128,58 @@ export class ConfirmDraftUseCase {
           data.description,
           data.idempotencyKey,
         );
+    }
+  }
+
+  /**
+   * Depois de "tenho outro problema", o chamado que o analista atendeu é cancelado quando o novo
+   * é criado. Falha aqui não desfaz o chamado novo; fica registrada no trace.
+   */
+  private async cancelReplaced(
+    employeeId: string,
+    ticketId: string,
+    newTicketId: string,
+  ): Promise<{ ticketId: string; cancelled: boolean; step: TraceStep }> {
+    const started = Date.now();
+    const base = {
+      id: 'cancel-replaced',
+      tool: 'tickets.close',
+      label: 'cancelou o chamado anterior',
+    };
+
+    try {
+      const { attempts } = await this.tickets.close(
+        employeeId,
+        ticketId,
+        {
+          resolution: 'CANCELLED',
+          reason: `Substituído pelo ${newTicketId}: o funcionário relatou outro problema.`,
+        },
+        `cancel-replaced-${ticketId}-${newTicketId}`,
+      );
+      return {
+        ticketId,
+        cancelled: true,
+        step: {
+          ...base,
+          status: attempts > 1 ? 'RETRIED' : 'OK',
+          attempts,
+          durationMs: Date.now() - started,
+          outputSummary: `${ticketId} cancelado, substituído pelo ${newTicketId}`,
+        },
+      };
+    } catch {
+      return {
+        ticketId,
+        cancelled: false,
+        step: {
+          ...base,
+          status: 'FAILED',
+          attempts: 1,
+          durationMs: Date.now() - started,
+          outputSummary: `${ticketId} não pôde ser cancelado`,
+        },
+      };
     }
   }
 

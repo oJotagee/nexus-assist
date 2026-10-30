@@ -2,6 +2,8 @@ import type { ConsoleConversationDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import { ConversationNotFoundError, EmployeeNotFoundError } from '@/domain/errors/domain.error';
+import { GetConsoleConversationUseCase } from './get-console-conversation.use-case';
+import { CLOCK, type Clock } from '../../ports/services.port';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
@@ -10,8 +12,6 @@ import {
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from '../../ports/repositories.port';
-import { CLOCK, type Clock } from '../../ports/services.port';
-import { GetConsoleConversationUseCase } from './get-console-conversation.use-case';
 
 @Injectable()
 export class SendAnalystMessageUseCase {

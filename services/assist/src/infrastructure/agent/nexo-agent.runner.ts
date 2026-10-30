@@ -1,7 +1,13 @@
 import { type AgentIntent, type MessageBlock, type TraceStep, confidenceBand } from '@nexo/shared';
-import { Agent } from '@mastra/core/agent';
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { Agent } from '@mastra/core/agent';
 
+import { TICKETS_GATEWAY, type TicketsGateway } from '@/application/ports/tickets-gateway.port';
+import { ID_GENERATOR, type IdGenerator } from '@/application/ports/services.port';
+import { SYSTEM_PROMPT, buildTurnContext } from './prompt';
+import { type TurnState, createAgentTools } from './tools';
+import { AGENT_MODEL, type AgentModel } from './model';
+import { TurnRecorder } from './turn-recorder';
 import {
   type AgentDecision,
   type AgentHistoryMessage,
@@ -17,12 +23,6 @@ import {
   HELP_ARTICLE_REPOSITORY,
   type HelpArticleRepository,
 } from '@/application/ports/repositories.port';
-import { ID_GENERATOR, type IdGenerator } from '@/application/ports/services.port';
-import { TICKETS_GATEWAY, type TicketsGateway } from '@/application/ports/tickets-gateway.port';
-import { AGENT_MODEL, type AgentModel } from './model';
-import { SYSTEM_PROMPT, buildTurnContext } from './prompt';
-import { type TurnState, createAgentTools } from './tools';
-import { TurnRecorder } from './turn-recorder';
 
 const MAX_STEPS = 6;
 /** Tempo máximo de um turno do agent; passado disso o chat mostra erro com "Tentar novamente". */
@@ -127,9 +127,17 @@ export class NexoAgentRunner implements AgentRunner {
 
       const usage = await output.totalUsage;
 
+      const inline = recorder.blocks.some((block) => block.type === 'QUICK_REPLIES')
+        ? null
+        : extractInlineOptions(text);
+      if (inline) {
+        text = inline.text;
+        sink.block(inline.block);
+      }
+
       return {
         text,
-        blocks: recorder.blocks,
+        blocks: inline ? [...recorder.blocks, inline.block] : recorder.blocks,
         steps: recorder.steps,
         decision:
           state.decision ?? inferDecision(recorder.steps, recorder.blocks, input.userMessage),
@@ -183,6 +191,44 @@ export function toError(payload: unknown): Error {
   return new Error(String(payload));
 }
 
+const INLINE_OPTIONS = /\[\s*op[çc][õo]es\s*:\s*([^\]]+)\]/i;
+
+/**
+ * Às vezes o modelo escreve as opções no texto ("Isso resolveu? [opções: Resolveu | Não
+ * resolveu]") em vez de usar ask_quick_question. Vira o bloco de botões; a última pergunta do
+ * texto vira a pergunta do bloco.
+ */
+export function extractInlineOptions(
+  text: string,
+): { text: string; block: Extract<MessageBlock, { type: 'QUICK_REPLIES' }> } | null {
+  const match = text.match(INLINE_OPTIONS);
+  if (!match) return null;
+
+  const options = (match[1] ?? '')
+    .split(/\s*[|;]\s*/)
+    .map((option) => option.replace(/^["'“]|["'”]$/g, '').trim())
+    .filter(Boolean)
+    .slice(0, 5);
+  if (options.length < 2) return null;
+
+  const rest = text
+    .replace(match[0], '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  const question = rest.match(/[^.!?\n]*\?\s*$/)?.[0]?.trim();
+  const remaining = question ? rest.slice(0, rest.length - question.length).trim() : rest;
+
+  return {
+    text: remaining,
+    block: {
+      type: 'QUICK_REPLIES',
+      question: question || 'Escolha uma opção:',
+      options,
+      answered: null,
+    },
+  };
+}
+
 /** Turno abortado pelo tempo máximo (AbortSignal.timeout). */
 export function isTimeoutError(error: unknown): boolean {
   const name = (error as { name?: unknown } | null)?.name;
@@ -233,7 +279,7 @@ function describeBlocks(blocks: MessageBlock[]): string {
         case 'DRAFT':
           return `[rascunho de chamado ${block.draftId}]`;
         case 'QUICK_REPLIES':
-          return `[opções: ${block.options.join(' | ')}${block.answered ? ` · respondeu "${block.answered}"` : ''}]`;
+          return `(pergunta feita com ask_quick_question: "${block.question}"${block.answered ? `; o funcionário escolheu "${block.answered}"` : ''})`;
         case 'NOTICE':
           return `[aviso: ${block.text}]`;
         default:

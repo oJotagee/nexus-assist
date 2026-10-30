@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import type {
   DraftMode,
   TicketCategory,
@@ -5,11 +6,10 @@ import type {
   TicketPriority,
   TicketType,
 } from '@nexo/shared';
-import { Injectable } from '@nestjs/common';
 
-import type { TicketDraftModel } from '@generated/prisma/models';
 import type { DraftRepository } from '@/application/ports/repositories.port';
 import { TicketDraftEntity } from '@/domain/entities/ticket-draft.entity';
+import type { TicketDraftModel } from '@generated/prisma/models';
 import { PrismaService } from '../prisma/prisma.service';
 
 function toDomain(row: TicketDraftModel): TicketDraftEntity {

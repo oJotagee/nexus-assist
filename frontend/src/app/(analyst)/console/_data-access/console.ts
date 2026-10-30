@@ -7,10 +7,10 @@ import type {
   TicketSummaryDto,
 } from '@nexo/shared';
 
-import { api } from '@/lib/api';
+import { redirectIfUnauthorized } from '@/lib/session-guard';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { authHeaders } from '@/lib/get-access-token';
-import { redirectIfUnauthorized } from '@/lib/session-guard';
+import { api } from '@/lib/api';
 
 async function get<T>(url: string, fallback: string, params?: Record<string, string>): Promise<T> {
   const headers = await authHeaders();

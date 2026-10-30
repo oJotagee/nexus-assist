@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import type { SupportGroup } from '@/domain/entities/ticket.entity';
-import { CLOCK, type Clock } from '../ports/clock.port';
 import { TICKET_REPOSITORY, type TicketRepository } from '../ports/ticket-repository.port';
+import type { SupportGroup } from '@/domain/entities/ticket.entity';
 import { type TicketView, toTicketView } from '../ticket-view';
+import { CLOCK, type Clock } from '../ports/clock.port';
 import { findOwnedTicket } from './find-owned-ticket';
 
 type TransferTicketInput = {

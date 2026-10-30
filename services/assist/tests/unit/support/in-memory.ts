@@ -291,6 +291,19 @@ export class FakeTicketsGateway implements TicketsGateway {
     });
   }
 
+  async close(
+    employeeId: string,
+    ticketId: string,
+    close: { resolution: 'RESOLVED' | 'CANCELLED'; reason: string },
+    key: string,
+  ) {
+    return this.write('close', key, [employeeId, ticketId, close], () => {
+      const ticket = this.owned(employeeId, ticketId);
+      ticket.status = close.resolution === 'RESOLVED' ? 'RESOLVED' : 'CLOSED';
+      return ticket;
+    });
+  }
+
   private async write(
     method: string,
     key: string,

@@ -1,13 +1,13 @@
 import type { ConversationDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
+import { CLOCK, type Clock, ID_GENERATOR, type IdGenerator } from '../../ports/services.port';
 import { ConversationEntity } from '@/domain/entities/conversation.entity';
 import { ConversationViewBuilder } from '../../conversation-view.builder';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
 } from '../../ports/repositories.port';
-import { CLOCK, type Clock, ID_GENERATOR, type IdGenerator } from '../../ports/services.port';
 
 /**
  * "Voltar outro dia e continuar de onde parei": devolve a última conversa do funcionário,

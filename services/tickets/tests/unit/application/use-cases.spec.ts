@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { AddTicketUpdateUseCase } from '@/application/use-cases/add-ticket-update.use-case';
-import { CreateTicketUseCase } from '@/application/use-cases/create-ticket.use-case';
-import { GetEmployeeTicketUseCase } from '@/application/use-cases/get-employee-ticket.use-case';
 import { ListEmployeeTicketsUseCase } from '@/application/use-cases/list-employee-tickets.use-case';
-import { ReopenTicketUseCase } from '@/application/use-cases/reopen-ticket.use-case';
+import { GetEmployeeTicketUseCase } from '@/application/use-cases/get-employee-ticket.use-case';
+import { AddTicketUpdateUseCase } from '@/application/use-cases/add-ticket-update.use-case';
 import { TransferTicketUseCase } from '@/application/use-cases/transfer-ticket.use-case';
-import { TicketNotFoundError } from '@/domain/errors/ticket.error';
-import { NOW, at, buildTicket } from '@tests/unit/support/builders';
+import { CreateTicketUseCase } from '@/application/use-cases/create-ticket.use-case';
+import { ReopenTicketUseCase } from '@/application/use-cases/reopen-ticket.use-case';
 import { FixedClock, InMemoryTicketRepository } from '@tests/unit/support/in-memory';
+import { NOW, at, buildTicket } from '@tests/unit/support/builders';
+import { TicketNotFoundError } from '@/domain/errors/ticket.error';
 
 describe('casos de uso do serviço de chamados', () => {
   let repository: InMemoryTicketRepository;

@@ -1,8 +1,11 @@
 import type { ConsoleConversationDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
-import type { ConversationEntity } from '@/domain/entities/conversation.entity';
 import { ConversationNotFoundError, EmployeeNotFoundError } from '@/domain/errors/domain.error';
+import { GetConsoleConversationUseCase } from './get-console-conversation.use-case';
+import { followUpQuestion } from '@/domain/policies/follow-up';
+import type { ConversationEntity } from '@/domain/entities/conversation.entity';
+import { CLOCK, type Clock } from '../../ports/services.port';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
@@ -11,8 +14,6 @@ import {
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from '../../ports/repositories.port';
-import { CLOCK, type Clock } from '../../ports/services.port';
-import { GetConsoleConversationUseCase } from './get-console-conversation.use-case';
 
 export type ConversationAction = 'assume' | 'release' | 'close';
 
@@ -71,7 +72,43 @@ export class ChangeConversationStateUseCase {
       blocks: [],
     });
 
+    if (action === 'release') await this.askFollowUp(next, analyst.name);
+
     return this.getConversation.execute(conversationId);
+  }
+
+  /** De volta com o agent: ele pergunta se pode fechar o chamado ou se há outro problema. */
+  private async askFollowUp(conversation: ConversationEntity, analystName: string): Promise<void> {
+    const ticketId = conversation.followUpTicketId;
+
+    await this.messages.append(
+      {
+        conversationId: conversation.id,
+        author: 'AGENT',
+        authorId: null,
+        authorName: 'Nexo Assist',
+        text: `Oi de novo! ${analystName} me devolveu a conversa.`,
+        blocks: [followUpQuestion(ticketId)],
+      },
+      {
+        intent: 'CLARIFY',
+        understood: {
+          summary: 'O analista devolveu a conversa ao agent.',
+          entities: ticketId ? { chamado: ticketId } : {},
+        },
+        action: { type: 'FOLLOW_UP', label: 'perguntou se pode fechar o chamado' },
+        confidenceScore: 1,
+        confidenceBand: 'HIGH',
+        rationale:
+          'Depois do atendimento do analista, o agent confirma se o problema foi resolvido antes de fechar o chamado.',
+        rulesApplied: ['Acompanhamento: confirmar a solução com o funcionário antes de fechar'],
+        steps: [],
+        model: 'nenhum (mensagem automática)',
+        inputTokens: 0,
+        outputTokens: 0,
+        latencyMs: 0,
+      },
+    );
   }
 
   private transition(

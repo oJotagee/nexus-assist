@@ -60,6 +60,7 @@ export function buildTurnContext(input: {
   focusTicketId: string | null;
   pendingDraft: TicketDraftDto | null;
   sessionSummary: string | null;
+  previousTicketId?: string | null;
 }): string {
   const lines = [
     'Contexto deste atendimento (dados do sistema, não do funcionário):',
@@ -68,6 +69,12 @@ export function buildTurnContext(input: {
   ];
 
   if (input.focusTicketId) lines.push(`- Chamado em foco na conversa: ${input.focusTicketId}`);
+
+  if (input.previousTicketId) {
+    lines.push(
+      `- Um analista acabou de atender o ${input.previousTicketId} e devolveu a conversa; o funcionário disse que tem outro problema. Siga o fluxo normal de problema novo (perguntas e draft_ticket). Se o novo chamado for confirmado, o ${input.previousTicketId} é cancelado automaticamente. Se for o mesmo problema do ${input.previousTicketId}, chame draft_ticket com mode "UPDATE" e targetTicketId "${input.previousTicketId}": a conversa volta para o analista.`,
+    );
+  }
 
   if (input.pendingDraft) {
     const draft = input.pendingDraft;

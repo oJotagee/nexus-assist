@@ -1,6 +1,6 @@
 import type { ConversationEntity } from '@/domain/entities/conversation.entity';
-import { ConversationNotFoundError } from '@/domain/errors/domain.error';
 import type { ConversationRepository } from '../../ports/repositories.port';
+import { ConversationNotFoundError } from '@/domain/errors/domain.error';
 
 /** Privacidade: conversa de outra pessoa é tratada como inexistente. */
 export async function loadOwnedConversation(

@@ -1,8 +1,8 @@
 'use client';
 
-import { MESSAGE_MAX_LENGTH } from '@nexo/shared';
 import { Loader2, SendHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { MESSAGE_MAX_LENGTH } from '@nexo/shared';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

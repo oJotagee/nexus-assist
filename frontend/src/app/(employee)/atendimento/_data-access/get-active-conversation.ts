@@ -2,10 +2,10 @@
 
 import type { ConversationDto } from '@nexo/shared';
 
-import { api } from '@/lib/api';
+import { redirectIfUnauthorized } from '@/lib/session-guard';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { authHeaders } from '@/lib/get-access-token';
-import { redirectIfUnauthorized } from '@/lib/session-guard';
+import { api } from '@/lib/api';
 
 /** Conversa atual do funcionário, com todo o histórico ("continuar de onde parei"). */
 export async function getActiveConversation(): Promise<ConversationDto> {

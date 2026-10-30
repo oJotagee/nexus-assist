@@ -2,10 +2,10 @@
 
 import type { DecisionTraceDto } from '@nexo/shared';
 
-import { api } from '@/lib/api';
+import { redirectIfUnauthorized } from '@/lib/session-guard';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { authHeaders } from '@/lib/get-access-token';
-import { redirectIfUnauthorized } from '@/lib/session-guard';
+import { api } from '@/lib/api';
 
 /** Detalhe da decisão do agent (usado no chat e no console). */
 export async function getDecisionTrace(messageId: string): Promise<DecisionTraceDto> {

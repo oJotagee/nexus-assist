@@ -2,6 +2,9 @@
 
 import { type ConsoleConversationDto, HANDOFF_REASON_LABEL } from '@nexo/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import Link from 'next/link';
 import {
   ArrowLeft,
   Bot,
@@ -13,23 +16,20 @@ import {
   Send,
   Undo2,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
 import { DecisionPanel } from '@/components/conversation/decision-panel';
-import { StatusDot } from '@/components/conversation/status';
-import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { getConsoleConversation } from '../../_data-access/console';
+import { EmployeeTicketsPanel } from './employee-tickets-panel';
 import { cn, formatRelative, getInitials } from '@/lib/utils';
+import { StatusDot } from '@/components/conversation/status';
+import { ConsoleMessage } from './console-message';
+import { Button } from '@/components/ui/button';
 import {
   type ConsoleActionResult,
   changeConversationState,
   sendAnalystMessage,
 } from '../../_actions/conversation-actions';
-import { getConsoleConversation } from '../../_data-access/console';
-import { ConsoleMessage } from './console-message';
-import { EmployeeTicketsPanel } from './employee-tickets-panel';
 
 type Props = { initialConversation: ConsoleConversationDto; analystId: string };
 

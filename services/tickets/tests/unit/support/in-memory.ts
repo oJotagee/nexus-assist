@@ -1,13 +1,13 @@
 import type { TicketType } from '@nexo/shared';
 
+import type { TicketRepository, TicketScope } from '@/application/ports/ticket-repository.port';
+import type { TicketEntity, TicketUpdate } from '@/domain/entities/ticket.entity';
 import type { Clock } from '@/application/ports/clock.port';
 import type {
   ClaimResult,
   IdempotencyStore,
   StoredResponse,
 } from '@/application/ports/idempotency-store.port';
-import type { TicketRepository, TicketScope } from '@/application/ports/ticket-repository.port';
-import type { TicketEntity, TicketUpdate } from '@/domain/entities/ticket.entity';
 
 export class InMemoryTicketRepository implements TicketRepository {
   readonly tickets = new Map<string, TicketEntity>();

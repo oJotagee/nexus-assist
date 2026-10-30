@@ -29,11 +29,12 @@ const RULES: Record<HandoffReason, string> = {
   CRITICAL: 'Anexo A · Transferência: casos críticos',
   OVERDUE: 'Anexo A · Transferência: chamados vencidos',
   LOW_CONFIDENCE: 'Anexo A · Transferência: quando o agent não tem segurança sobre o que fazer',
+  RETURNED: 'Atendimento devolvido: o mesmo problema continua, a conversa volta para o analista',
 };
 
 /** Casos críticos e vencidos vão para o N2; o resto começa no N1. */
 function groupFor(reason: HandoffReason): SupportLevel {
-  return reason === 'CRITICAL' || reason === 'OVERDUE' ? 'N2' : 'N1';
+  return reason === 'CRITICAL' || reason === 'OVERDUE' || reason === 'RETURNED' ? 'N2' : 'N1';
 }
 
 function decide(reason: HandoffReason, forcedByPolicy: boolean): HandoffDecision {

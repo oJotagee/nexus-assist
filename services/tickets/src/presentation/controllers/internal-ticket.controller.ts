@@ -10,23 +10,25 @@ import {
 } from '@nestjs/common';
 import { ApiHeader, ApiTags } from '@nestjs/swagger';
 
-import { AddTicketUpdateUseCase } from '@/application/use-cases/add-ticket-update.use-case';
-import { CreateTicketUseCase } from '@/application/use-cases/create-ticket.use-case';
-import { GetEmployeeTicketUseCase } from '@/application/use-cases/get-employee-ticket.use-case';
 import { ListEmployeeTicketsUseCase } from '@/application/use-cases/list-employee-tickets.use-case';
-import { ReopenTicketUseCase } from '@/application/use-cases/reopen-ticket.use-case';
+import { GetEmployeeTicketUseCase } from '@/application/use-cases/get-employee-ticket.use-case';
+import { LegacyInstabilityInterceptor } from '../interceptors/legacy-instability.interceptor';
+import { AddTicketUpdateUseCase } from '@/application/use-cases/add-ticket-update.use-case';
 import { TransferTicketUseCase } from '@/application/use-cases/transfer-ticket.use-case';
+import { CreateTicketUseCase } from '@/application/use-cases/create-ticket.use-case';
+import { ReopenTicketUseCase } from '@/application/use-cases/reopen-ticket.use-case';
+import { CloseTicketUseCase } from '@/application/use-cases/close-ticket.use-case';
+import { IdempotencyInterceptor } from '../interceptors/idempotency.interceptor';
 import type { TicketDetailView, TicketView } from '@/application/ticket-view';
+import { InternalApiSecretGuard } from '../guards/internal-api-secret.guard';
 import {
   AddTicketUpdateRequestDto,
+  CloseTicketRequestDto,
   CreateTicketRequestDto,
   ListTicketsQueryDto,
   ReopenTicketRequestDto,
   TransferTicketRequestDto,
 } from '../dtos/ticket.request.dto';
-import { InternalApiSecretGuard } from '../guards/internal-api-secret.guard';
-import { IdempotencyInterceptor } from '../interceptors/idempotency.interceptor';
-import { LegacyInstabilityInterceptor } from '../interceptors/legacy-instability.interceptor';
 
 @ApiTags('internal')
 @ApiHeader({ name: 'X-Internal-Secret', required: true })
@@ -41,6 +43,7 @@ export class InternalTicketController {
     private readonly addUpdate: AddTicketUpdateUseCase,
     private readonly reopenTicket: ReopenTicketUseCase,
     private readonly transferTicket: TransferTicketUseCase,
+    private readonly closeTicket: CloseTicketUseCase,
   ) {}
 
   @Get()
@@ -96,5 +99,15 @@ export class InternalTicketController {
     @Body() body: TransferTicketRequestDto,
   ): Promise<TicketView> {
     return this.transferTicket.execute({ employeeId, ticketId, ...body });
+  }
+
+  @Post(':ticketId/close')
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  close(
+    @Param('employeeId') employeeId: string,
+    @Param('ticketId') ticketId: string,
+    @Body() body: CloseTicketRequestDto,
+  ): Promise<TicketView> {
+    return this.closeTicket.execute({ employeeId, ticketId, ...body });
   }
 }

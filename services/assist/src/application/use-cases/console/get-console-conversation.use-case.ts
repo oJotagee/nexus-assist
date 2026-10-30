@@ -1,8 +1,8 @@
 import type { ConsoleConversationDto } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
-import { ConversationNotFoundError } from '@/domain/errors/domain.error';
 import { ConversationViewBuilder } from '../../conversation-view.builder';
+import { ConversationNotFoundError } from '@/domain/errors/domain.error';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,

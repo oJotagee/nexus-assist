@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
+import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@generated/prisma/client';
 import type {
   ClaimResult,
   IdempotencyStore,
   StoredResponse,
 } from '@/application/ports/idempotency-store.port';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PrismaIdempotencyStore implements IdempotencyStore {

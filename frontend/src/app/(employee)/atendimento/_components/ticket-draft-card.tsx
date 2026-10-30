@@ -1,5 +1,9 @@
 'use client';
 
+import { CheckCircle2, CornerDownLeft, Loader2, RotateCw } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   type ConversationDto,
   TICKET_CATEGORY_LABEL,
@@ -7,13 +11,11 @@ import {
   type TicketDraftDto,
   formatDueAt,
 } from '@nexo/shared';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, CornerDownLeft, Loader2, RotateCw } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { PriorityLabel, StatusDot } from '@/components/conversation/status';
+import { CONVERSATION_QUERY_KEY } from '../_hooks/use-agent-stream';
 import { Detail } from '@/components/conversation/ticket-card';
+import { DraftEditDialog } from './draft-edit-dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -21,8 +23,6 @@ import {
   cancelDraft,
   confirmDraft,
 } from '../_actions/draft-actions';
-import { CONVERSATION_QUERY_KEY } from '../_hooks/use-agent-stream';
-import { DraftEditDialog } from './draft-edit-dialog';
 
 const HEADER: Record<TicketDraftDto['mode'], string> = {
   CREATE: 'Novo chamado',

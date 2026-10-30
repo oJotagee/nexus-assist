@@ -1,5 +1,5 @@
-import { ASSIST_API_URL } from '@/lib/api';
 import { getAccessToken } from '@/lib/get-access-token';
+import { ASSIST_API_URL } from '@/lib/api';
 
 /**
  * Exceção ao padrão _actions/_data-access: server actions não fazem streaming incremental,

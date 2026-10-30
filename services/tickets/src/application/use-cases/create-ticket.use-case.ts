@@ -1,10 +1,10 @@
 import type { TicketCategory, TicketImpact, TicketPriority, TicketType } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
-import { TicketEntity, type TicketUpdateAuthor } from '@/domain/entities/ticket.entity';
-import { CLOCK, type Clock } from '../ports/clock.port';
 import { TICKET_REPOSITORY, type TicketRepository } from '../ports/ticket-repository.port';
+import { TicketEntity, type TicketUpdateAuthor } from '@/domain/entities/ticket.entity';
 import { type TicketView, toTicketView } from '../ticket-view';
+import { CLOCK, type Clock } from '../ports/clock.port';
 
 export type CreateTicketInput = {
   employeeId: string;

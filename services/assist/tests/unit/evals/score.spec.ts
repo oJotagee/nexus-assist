@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 
+import { CRITERIA, scoreScenario, summarizeByCriterion } from '@tests/evals/score';
 import type { AgentTurnResult } from '@/application/ports/agent.port';
 import type { EvalScenario } from '@tests/evals/scenarios';
-import { CRITERIA, scoreScenario, summarizeByCriterion } from '@tests/evals/score';
 
 function result(overrides: Partial<AgentTurnResult> = {}): AgentTurnResult {
   return {

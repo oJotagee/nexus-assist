@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
+import { ConsoleConversationView } from './_components/console-conversation-view';
+import { getConsoleConversation } from '../_data-access/console';
 import { Skeleton } from '@/components/ui/skeleton';
 import { auth } from '@/lib/auth';
-import { getConsoleConversation } from '../_data-access/console';
-import { ConsoleConversationView } from './_components/console-conversation-view';
 
 export const metadata: Metadata = { title: 'Conversa' };
 

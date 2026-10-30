@@ -1,12 +1,12 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import {
   HANDOFF_REASON_LABEL,
   TICKET_CATEGORY_LABEL,
   TICKET_PRIORITY_LABEL,
   type ConsoleConversationDto,
 } from '@nexo/shared';
-import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   ArrowLeftRight,
@@ -18,11 +18,11 @@ import {
 import { useState } from 'react';
 
 import { TicketStatusBadge } from '@/components/conversation/status';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn, formatRelative, formatTime } from '@/lib/utils';
 import { getEmployeeTickets } from '../../_data-access/console';
+import { cn, formatRelative, formatTime } from '@/lib/utils';
 import { AllTicketsDialog } from './all-tickets-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 type EmployeeTicketsPanelProps = {
   conversation: ConsoleConversationDto;

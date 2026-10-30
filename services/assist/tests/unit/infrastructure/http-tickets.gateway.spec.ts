@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 
+import { HttpTicketsGateway } from '@/infrastructure/http/http-tickets.gateway';
 import {
   TicketConflictError,
   TicketNotFoundError,
   TicketsUnavailableError,
 } from '@/domain/errors/domain.error';
-import { HttpTicketsGateway } from '@/infrastructure/http/http-tickets.gateway';
 
 describe('HttpTicketsGateway', () => {
   let server: ReturnType<typeof Bun.serve>;

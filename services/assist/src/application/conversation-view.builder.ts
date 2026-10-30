@@ -2,6 +2,7 @@ import { type ConversationDto, SESSION_MESSAGE_LIMIT } from '@nexo/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { ConversationEntity } from '@/domain/entities/conversation.entity';
+import { toDraftDto, toMessageDto } from './presenters';
 import {
   CONVERSATION_REPOSITORY,
   type ConversationRepository,
@@ -12,7 +13,6 @@ import {
   MESSAGE_REPOSITORY,
   type MessageRepository,
 } from './ports/repositories.port';
-import { toDraftDto, toMessageDto } from './presenters';
 
 /** Monta a visão completa da conversa (histórico de todas as sessões, rascunhos e estado). */
 @Injectable()

@@ -2,10 +2,10 @@
 
 import type { UserDto } from '@nexo/shared';
 
-import { api } from '@/lib/api';
+import { redirectIfUnauthorized } from '@/lib/session-guard';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { authHeaders } from '@/lib/get-access-token';
-import { redirectIfUnauthorized } from '@/lib/session-guard';
+import { api } from '@/lib/api';
 
 export async function getProfile(): Promise<UserDto> {
   const headers = await authHeaders();

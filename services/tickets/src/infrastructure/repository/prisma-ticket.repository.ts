@@ -1,11 +1,11 @@
 import type { TicketType } from '@nexo/shared';
 import { Injectable } from '@nestjs/common';
 
-import type { Prisma } from '@generated/prisma/client';
 import type { TicketScope, TicketRepository } from '@/application/ports/ticket-repository.port';
 import type { TicketEntity, TicketUpdate } from '@/domain/entities/ticket.entity';
 import { TicketMapper } from '../persistence/ticket.mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import type { Prisma } from '@generated/prisma/client';
 
 const RECENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const OPEN_STATUSES = ['OPEN', 'IN_PROGRESS', 'WAITING_ANALYST', 'WAITING_REQUESTER', 'APPROVED'];

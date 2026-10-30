@@ -1,11 +1,11 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
 import { KeyRound, Loader2, Mail, RotateCcw } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
 import { requestPasswordReset } from '../_actions/request-password-reset';
+import { Button } from '@/components/ui/button';
 
 export function PasswordCard({ email, changedDaysAgo }: { email: string; changedDaysAgo: number }) {
   const reset = useMutation({

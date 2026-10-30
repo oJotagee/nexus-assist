@@ -1,15 +1,15 @@
 import type { ConsoleFilter } from '@nexo/shared';
 import { Injectable } from '@nestjs/common';
 
-import type { Prisma } from '@generated/prisma/client';
+import { ConversationEntity } from '@/domain/entities/conversation.entity';
 import type { ConversationModel } from '@generated/prisma/models';
+import type { SessionRecord } from '@/domain/entities/message';
+import { PrismaService } from '../prisma/prisma.service';
+import type { Prisma } from '@generated/prisma/client';
 import type {
   ConsoleListParams,
   ConversationRepository,
 } from '@/application/ports/repositories.port';
-import { ConversationEntity } from '@/domain/entities/conversation.entity';
-import type { SessionRecord } from '@/domain/entities/message';
-import { PrismaService } from '../prisma/prisma.service';
 
 const CONSOLE_PAGE_SIZE = 50;
 
@@ -24,6 +24,8 @@ function toDomain(row: ConversationModel): ConversationEntity {
     handoffGroup: row.handoffGroup,
     handoffAt: row.handoffAt,
     focusTicketId: row.focusTicketId,
+    followUp: row.followUp,
+    followUpTicketId: row.followUpTicketId,
     resolvedByAgent: row.resolvedByAgent,
     lastMessageAt: row.lastMessageAt,
     createdAt: row.createdAt,

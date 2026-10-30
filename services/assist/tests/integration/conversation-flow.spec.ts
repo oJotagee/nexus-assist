@@ -4,15 +4,16 @@ import { config } from 'dotenv';
 config({ path: `${import.meta.dir}/../../.env` });
 
 import 'reflect-metadata';
+
 import type { AgentStreamEvent, ConsoleConversationDto, ConversationDto } from '@nexo/shared';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
+import { type ScriptedStep, scriptedModel } from '@tests/unit/support/scripted-model';
+import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { AGENT_MODEL } from '@/infrastructure/agent/model';
 import { AppModule } from '@/app.module';
 import { configureApp } from '@/app.setup';
-import { AGENT_MODEL } from '@/infrastructure/agent/model';
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
-import { type ScriptedStep, scriptedModel } from '@tests/unit/support/scripted-model';
 
 /**
  * Fluxo completo pelo HTTP: assist real + Postgres real + serviço de chamados real (subprocesso,

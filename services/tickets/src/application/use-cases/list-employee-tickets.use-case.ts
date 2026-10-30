@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { type TicketView, toTicketView } from '../ticket-view';
 import { CLOCK, type Clock } from '../ports/clock.port';
 import {
   TICKET_REPOSITORY,
   type TicketRepository,
   type TicketScope,
 } from '../ports/ticket-repository.port';
-import { type TicketView, toTicketView } from '../ticket-view';
 
 type ListEmployeeTicketsInput = {
   employeeId: string;
