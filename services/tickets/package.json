@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --env-file=.env --watch src/main.ts",
-    "start": "bun run src/main.ts",
+    "start": "prisma generate && prisma migrate deploy && SEED_IF_EMPTY=true bun prisma/seed.ts && bun run src/main.ts",
     "test": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
     "typecheck": "tsc --noEmit",

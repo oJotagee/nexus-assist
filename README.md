@@ -36,7 +36,7 @@ Os dois serviços e o Postgres ficam no Railway; o frontend na Vercel. O serviç
 | `tickets` | `services/tickets/Dockerfile` | não | `DATABASE_URL=${{postgres-tickets.DATABASE_URL}}`, `INTERNAL_API_SECRET` |
 | `assist` | `services/assist/Dockerfile` | sim (porta 8081) | `DATABASE_URL=${{postgres-assist.DATABASE_URL}}`, `JWT_SECRET`, `INTERNAL_API_SECRET` (o mesmo), `TICKETS_API_URL=http://tickets.railway.internal:8082`, `GOOGLE_GENERATIVE_AI_API_KEY` |
 
-O Dockerfile de cada serviço é escolhido pela variável `RAILWAY_DOCKERFILE_PATH`. No start, cada um aplica as migrations e carrega os dados de exemplo só se o banco estiver vazio.
+O Dockerfile de cada serviço é escolhido pela variável `RAILWAY_DOCKERFILE_PATH`. No start (pelo Dockerfile ou pelo script `start`), cada um aplica as migrations e carrega os dados de exemplo só se o banco estiver vazio.
 
 **Vercel**: importe o repositório com o diretório raiz `frontend` e defina `ASSIST_API_URL` (domínio público do assist), `AUTH_SECRET` e `AUTH_TRUST_HOST=true`.
 
