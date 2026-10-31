@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --env-file=.env --watch src/main.ts",
-    "start": "prisma generate && prisma migrate deploy && SEED_IF_EMPTY=true bun prisma/seed.ts && bun run src/main.ts",
+    "start": "prisma generate && prisma migrate deploy && bun run src/main.ts",
     "test": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
     "typecheck": "tsc --noEmit",
@@ -12,6 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "seed": "SEED_IF_EMPTY=true bun prisma/seed.ts",
+    "seed:reset": "bun prisma/seed.ts",
     "db:setup": "prisma migrate deploy && prisma db seed"
   },
   "dependencies": {

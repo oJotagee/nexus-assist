@@ -26,11 +26,10 @@ RUN bunx --bun prisma generate
 
 ENV NODE_ENV=production
 ENV PORT=8081
-ENV SEED_IF_EMPTY=true
 
 USER bun
 
 EXPOSE 8081
 
 # Bun executa TypeScript direto — não há etapa de compilação
-CMD ["sh", "-c", "bunx --bun prisma migrate deploy && bun prisma/seed.ts && bun run src/main.ts"]
+CMD ["sh", "-c", "bunx --bun prisma migrate deploy && bun run src/main.ts"]

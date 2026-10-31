@@ -36,7 +36,11 @@ Os dois serviços e o Postgres ficam no Railway; o frontend na Vercel. O serviç
 | `tickets` | `services/tickets/Dockerfile` | não | `DATABASE_URL=${{postgres-tickets.DATABASE_URL}}`, `INTERNAL_API_SECRET` |
 | `assist` | `services/assist/Dockerfile` | sim (porta 8081) | `DATABASE_URL=${{postgres-assist.DATABASE_URL}}`, `JWT_SECRET`, `INTERNAL_API_SECRET` (o mesmo), `TICKETS_API_URL=http://tickets.railway.internal:8082`, `GOOGLE_GENERATIVE_AI_API_KEY` |
 
-O Dockerfile de cada serviço é escolhido pela variável `RAILWAY_DOCKERFILE_PATH`. No start (pelo Dockerfile ou pelo script `start`), cada um aplica as migrations e carrega os dados de exemplo só se o banco estiver vazio.
+O Dockerfile de cada serviço é escolhido pela variável `RAILWAY_DOCKERFILE_PATH`. No start, cada um aplica as migrations pendentes; os dados de exemplo são carregados à parte, da sua máquina:
+
+1. Em cada Postgres do Railway, habilite o acesso público e copie a `DATABASE_PUBLIC_URL`.
+2. Crie `services/tickets/.env.production` e `services/assist/.env.production` (fora do git) com `DATABASE_URL="<DATABASE_PUBLIC_URL>"`.
+3. Rode `bun run db:prod:seed` (só popula banco vazio). `bun run db:prod:reset` apaga e recarrega, com confirmação; `bun run db:prod:migrate` aplica migrations.
 
 **Vercel**: importe o repositório com o diretório raiz `frontend` e defina `ASSIST_API_URL` (domínio público do assist), `AUTH_SECRET` e `AUTH_TRUST_HOST=true`.
 
