@@ -1,13 +1,15 @@
 'use client';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { AlertCircle, MessageCircle, Search } from 'lucide-react';
+import { AlertCircle, LogOut, MessageCircle, Search } from 'lucide-react';
 import { useDeferredValue, useState } from 'react';
 import type { ConsoleFilter } from '@nexo/shared';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
+import { signOutAction } from '@/app/(employee)/_actions/sign-out';
 import { StatusDot } from '@/components/conversation/status';
+import { NexoMark } from '@/components/nexo-logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatTime, getInitials } from '@/lib/utils';
@@ -69,11 +71,21 @@ export function ConversationList({ className }: { className?: string }) {
       )}
     >
       <header className="space-y-3 border-b px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Conversas</h1>
+        <div className="flex items-center justify-between gap-2">
+          <NexoMark className="md:hidden" />
+          <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">Conversas</h1>
           <StatusDot tone="success" pill>
             Disponível
           </StatusDot>
+          <form action={signOutAction} className="md:hidden">
+            <button
+              type="submit"
+              aria-label="Sair"
+              className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <LogOut className="size-[18px]" />
+            </button>
+          </form>
         </div>
 
         <div className="relative">
@@ -87,7 +99,7 @@ export function ConversationList({ className }: { className?: string }) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Pesquisar conversas ou chamados"
-            className="h-9 w-full rounded-lg border bg-muted/50 pr-3 pl-9 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20"
+            className="h-9 w-full rounded-lg border bg-muted/50 pr-3 pl-9 text-base outline-none sm:text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20"
           />
         </div>
 

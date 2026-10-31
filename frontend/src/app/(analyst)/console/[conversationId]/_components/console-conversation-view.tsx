@@ -152,7 +152,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
         className="flex min-w-0 flex-1 flex-col"
         aria-label={`Conversa com ${conversation.employee.name}`}
       >
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-white px-4">
+        <header className="flex h-14 shrink-0 items-center gap-1.5 border-b bg-white px-2 sm:gap-3 sm:px-4">
           <Link
             href="/console"
             className="grid size-8 place-items-center rounded-md hover:bg-muted lg:hidden"
@@ -160,7 +160,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
           >
             <ArrowLeft className="size-4" />
           </Link>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
+          <span className="hidden size-9 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-accent-foreground sm:grid">
             {getInitials(conversation.employee.name)}
           </span>
           <div className="min-w-0 flex-1">
@@ -177,6 +177,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
               <Button
                 variant="outline"
                 size="sm"
+                aria-label="Devolver ao agent"
                 onClick={() => transition.mutate('release')}
                 disabled={busy}
               >
@@ -187,6 +188,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
                 variant="outline"
                 size="sm"
                 className="border-red-200 text-danger hover:bg-danger-soft hover:text-danger"
+                aria-label="Encerrar atendimento"
                 onClick={() => setCloseOpen(true)}
                 disabled={busy}
               >
@@ -247,18 +249,27 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
             <span className="grid size-9 place-items-center rounded-full bg-warning-soft text-warning">
               <Headset className="size-4" />
             </span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 basis-[calc(100%-3rem)] sm:flex-1 sm:basis-0">
               <p className="text-sm font-semibold">{firstName} espera um atendente</p>
               <p className="text-xs text-muted-foreground">
                 Agent pausado
                 {conversation.handoffAt && ` · em fila ${formatRelative(conversation.handoffAt)}`}
               </p>
             </div>
-            <Button variant="outline" onClick={() => transition.mutate('release')} disabled={busy}>
+            <Button
+              variant="outline"
+              className="flex-1 sm:flex-none"
+              onClick={() => transition.mutate('release')}
+              disabled={busy}
+            >
               {pendingAction === 'release' ? <Loader2 className="animate-spin" /> : <Bot />}
               Devolver ao agent
             </Button>
-            <Button onClick={() => transition.mutate('assume')} disabled={busy}>
+            <Button
+              className="flex-1 sm:flex-none"
+              onClick={() => transition.mutate('assume')}
+              disabled={busy}
+            >
               {pendingAction === 'assume' ? <Loader2 className="animate-spin" /> : <Headset />}
               Assumir atendimento
             </Button>
@@ -311,7 +322,7 @@ export function ConsoleConversationView({ initialConversation, analystId }: Prop
                     }
                   }}
                   placeholder={`Responda para ${firstName}…`}
-                  className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border bg-white px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20"
+                  className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-lg border bg-white px-3 py-2 text-base outline-none sm:text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20"
                 />
                 <Button
                   type="submit"

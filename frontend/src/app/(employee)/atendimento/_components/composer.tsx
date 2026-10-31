@@ -53,7 +53,7 @@ export function Composer({
   const nearLimit = messageCount >= limit - 5;
 
   return (
-    <div className="sticky bottom-0 z-20 border-t bg-background/95 px-4 pt-3 pb-3 backdrop-blur sm:px-6">
+    <div className="sticky bottom-0 z-20 border-t bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
       <form
         className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border bg-white p-2 shadow-sm focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20"
         onSubmit={(event) => {
@@ -79,11 +79,11 @@ export function Composer({
               void submit();
             }
           }}
-          className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+          className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-base sm:text-[15px] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
         />
         <Button type="submit" disabled={disabled || busy || !text.trim()} className="h-9">
           {busy ? <Loader2 className="animate-spin" /> : <SendHorizontal />}
-          Enviar
+          <span className="sr-only sm:not-sr-only">Enviar</span>
         </Button>
       </form>
       <p

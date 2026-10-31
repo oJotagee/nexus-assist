@@ -20,7 +20,7 @@ export function EmployeeTopbar({ title, status }: EmployeeTopbarProps) {
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-white px-4 sm:px-6">
       <nav aria-label="Você está em" className="flex min-w-0 items-center gap-1.5 text-sm">
-        <NexoLogo className="mr-2 md:hidden" />
+        <NexoLogo compact className="mr-2 md:hidden" />
         <span className="hidden text-muted-foreground sm:inline">Service desk de TI</span>
         <ChevronRight className="hidden size-3.5 text-muted-foreground sm:inline" />
         <span className="truncate font-medium">{title}</span>

@@ -1,28 +1,29 @@
 'use client';
 
-import { LogOut, MessagesSquare } from 'lucide-react';
 import type { SupportLevel } from '@nexo/shared';
 import { useQuery } from '@tanstack/react-query';
+import { MessagesSquare } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 
-import { NexoMark } from '@/components/nexo-logo';
-import { cn, getInitials } from '@/lib/utils';
-import { signOutAction } from '../../../(employee)/_actions/sign-out';
 import { listConsoleConversations } from '../_data-access/console';
+import { AppSidebar } from '@/components/app-sidebar';
 import { ConversationList } from './conversation-list';
+import { cn } from '@/lib/utils';
 
 export type ConsoleAnalyst = { id: string; name: string; supportLevel: SupportLevel | null };
 
 /**
- * Console do analista (Telas 4 e 5): rail · lista de conversas · conversa (children).
- * No mobile, lista e conversa viram navegação em pilha.
+ * Console do analista (Telas 4 e 5): sidebar · lista de conversas · conversa (children).
+ * A sidebar começa recolhida porque a tela já tem três colunas. No mobile, lista e conversa
+ * viram navegação em pilha.
  */
 export function ConsoleShell({
   analyst,
+  initialCollapsed,
   children,
 }: {
   analyst: ConsoleAnalyst;
+  initialCollapsed: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -37,53 +38,23 @@ export function ConsoleShell({
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
-      <nav
-        aria-label="Console"
-        className="hidden w-14 shrink-0 flex-col items-center border-r bg-white py-4 sm:flex"
-      >
-        <Link
-          href="/console"
-          aria-label="Nexo Assist — conversas"
-          className="grid size-9 place-items-center rounded-lg bg-primary text-white"
-        >
-          <NexoMark className="size-4" />
-        </Link>
-        <Link
-          href="/console"
-          aria-current="page"
-          className="relative mt-6 grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          aria-label={`Conversas${counts.data?.waiting ? `, ${counts.data.waiting} aguardando atendente` : ''}`}
-        >
-          <MessagesSquare className="size-5" strokeWidth={1.75} />
-          {!!counts.data?.waiting && (
-            <span className="absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white tabular-nums">
-              {counts.data.waiting}
-            </span>
-          )}
-        </Link>
-
-        <div className="mt-auto flex flex-col items-center gap-3">
-          <span
-            className="relative grid size-9 place-items-center rounded-full bg-accent text-xs font-semibold text-accent-foreground"
-            title={`${analyst.name} · disponível`}
-          >
-            {getInitials(analyst.name)}
-            <span
-              className="absolute right-0 bottom-0 size-2.5 rounded-full border-2 border-white bg-emerald-500"
-              aria-hidden="true"
-            />
-          </span>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              aria-label="Sair"
-              className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            >
-              <LogOut className="size-4" />
-            </button>
-          </form>
-        </div>
-      </nav>
+      <AppSidebar
+        items={[
+          {
+            href: '/console',
+            label: 'Conversas',
+            icon: MessagesSquare,
+            active: true,
+            badge: counts.data?.waiting,
+          },
+        ]}
+        user={{
+          name: analyst.name,
+          detail: analyst.supportLevel ? `Suporte ${analyst.supportLevel}` : 'Disponível',
+          available: true,
+        }}
+        initialCollapsed={initialCollapsed}
+      />
 
       <ConversationList className={cn(inConversation && 'hidden lg:flex')} />
 

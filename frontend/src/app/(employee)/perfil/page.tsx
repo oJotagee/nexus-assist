@@ -37,18 +37,18 @@ async function ProfileContent() {
   return (
     <div className="mt-6 space-y-4">
       <dl className="divide-y overflow-hidden rounded-xl border bg-card">
-        <div className="grid grid-cols-[140px_1fr] items-center gap-4 px-5 py-4 text-sm">
+        <div className="grid gap-1 px-5 py-4 text-sm sm:grid-cols-[140px_1fr] sm:items-center sm:gap-4">
           <dt className="text-muted-foreground">Nome</dt>
           <dd className="font-medium">{profile.name}</dd>
         </div>
-        <div className="grid grid-cols-[140px_1fr] items-center gap-4 px-5 py-4 text-sm">
+        <div className="grid gap-1 px-5 py-4 text-sm sm:grid-cols-[140px_1fr] sm:items-center sm:gap-4">
           <dt className="text-muted-foreground">E-mail corporativo</dt>
           <dd className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-medium">{profile.email}</span>
+            <span className="min-w-0 font-medium break-all">{profile.email}</span>
             <span className="text-xs text-muted-foreground">Gerenciado pela TI</span>
           </dd>
         </div>
-        <div className="grid grid-cols-[140px_1fr] items-center gap-4 px-5 py-4 text-sm">
+        <div className="grid gap-1 px-5 py-4 text-sm sm:grid-cols-[140px_1fr] sm:items-center sm:gap-4">
           <dt className="text-muted-foreground">Área</dt>
           <dd className="font-medium">{profile.department}</dd>
         </div>

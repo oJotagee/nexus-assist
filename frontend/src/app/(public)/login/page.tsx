@@ -14,11 +14,11 @@ export default function LoginPage() {
       <section className="flex flex-col bg-white px-6 py-6 sm:px-10">
         <header className="flex items-center justify-between gap-4 text-sm">
           <NexoLogo className="lg:invisible" />
-          <p className="text-muted-foreground">
-            Problemas para entrar?{' '}
+          <p className="text-right text-muted-foreground">
+            <span className="hidden sm:inline">Problemas para entrar? </span>
             <a
               href="tel:4000"
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="font-medium whitespace-nowrap text-primary underline-offset-4 hover:underline"
             >
               Ligue no ramal 4000
             </a>

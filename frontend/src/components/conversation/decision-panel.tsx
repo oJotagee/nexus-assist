@@ -103,7 +103,7 @@ function TraceBody({ trace }: { trace: DecisionTraceDto }) {
             {trace.rulesApplied.map((rule) => (
               <li
                 key={rule}
-                className="rounded-md border-l-2 border-primary bg-accent/60 px-2.5 py-1.5 text-xs text-accent-foreground"
+                className="rounded-md bg-accent/60 px-2.5 py-1.5 text-xs text-accent-foreground"
               >
                 {rule}
               </li>
