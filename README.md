@@ -162,6 +162,10 @@ packages/shared/   tickets, sla, assist (contratos), seed (funcionários)
 scripts/           setup.ts, dev.ts
 ```
 
+## CI
+
+A cada push na `main` e em pull requests, o GitHub Actions (`.github/workflows/ci.yml`) roda lint, typecheck, os testes unitários e os de interação do frontend. Os testes de integração precisam de Postgres e rodam localmente (`bun run test:integration`).
+
 ## Comandos úteis
 
 ```bash

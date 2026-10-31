@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, typecheck e testes unitários
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://user:password@localhost:5432/dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Instalar dependências
+        run: bun install --frozen-lockfile
+
+      - name: Gerar os clients do Prisma
+        run: |
+          bun run --cwd services/tickets prisma:generate
+          bun run --cwd services/assist prisma:generate
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Testes unitários
+        run: bun run test:unit
+
+      - name: Testes de interação (frontend)
+        run: bun run test:interaction
