@@ -1,6 +1,7 @@
 /**
  * Migrations e dados de exemplo nos bancos de produção, a partir da sua máquina:
  *
+ *   bun run db:prod:generate  gera os clients do Prisma (os outros comandos já geram antes)
  *   bun run db:prod:migrate   aplica as migrations pendentes
  *   bun run db:prod:seed      carrega os dados de exemplo só se o banco estiver vazio
  *   bun run db:prod:reset     APAGA tudo e recarrega os dados de exemplo (pede confirmação)
@@ -12,7 +13,12 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const ROOT = `${import.meta.dir}/..`;
 const SERVICES = ['tickets', 'assist'] as const;
-const SCRIPTS = { migrate: 'prisma:deploy', seed: 'seed', reset: 'seed:reset' } as const;
+const SCRIPTS = {
+  generate: 'prisma:generate',
+  migrate: 'prisma:deploy',
+  seed: 'seed',
+  reset: 'seed:reset',
+} as const;
 
 type Command = keyof typeof SCRIPTS;
 
@@ -36,7 +42,7 @@ function describe(url: string): string {
 
 const command = process.argv[2] as Command | undefined;
 if (!command || !(command in SCRIPTS)) {
-  console.error('Uso: bun scripts/prod-db.ts <migrate|seed|reset>');
+  console.error('Uso: bun scripts/prod-db.ts <generate|migrate|seed|reset>');
   process.exit(1);
 }
 
@@ -53,16 +59,21 @@ if (command === 'reset') {
   }
 }
 
-for (const { service, url } of targets) {
-  console.log(`\n▸ ${service}: ${SCRIPTS[command]}`);
-  const child = Bun.spawn(['bun', 'run', SCRIPTS[command]], {
+async function run(service: string, url: string, script: string): Promise<void> {
+  console.log(`\n▸ ${service}: ${script}`);
+  const child = Bun.spawn(['bun', 'run', script], {
     cwd: `${ROOT}/services/${service}`,
     env: { ...process.env, DATABASE_URL: url },
     stdout: 'inherit',
     stderr: 'inherit',
   });
   if ((await child.exited) !== 0) {
-    console.error(`\n${service}: falhou.`);
+    console.error(`\n${service}: ${script} falhou.`);
     process.exit(1);
   }
+}
+
+for (const { service, url } of targets) {
+  if (command !== 'generate') await run(service, url, 'prisma:generate');
+  await run(service, url, SCRIPTS[command]);
 }

@@ -19,6 +19,7 @@
     "db:setup": "bun run --cwd services/tickets prisma:generate && bun run --cwd services/tickets db:setup && bun run --cwd services/assist prisma:generate && bun run --cwd services/assist db:setup",
     "db:seed": "bun run --cwd services/tickets db:seed && bun run --cwd services/assist db:seed",
     "db:prod:migrate": "bun scripts/prod-db.ts migrate",
+    "db:prod:generate": "bun scripts/prod-db.ts generate",
     "db:prod:seed": "bun scripts/prod-db.ts seed",
     "db:prod:reset": "bun scripts/prod-db.ts reset",
     "docker:up": "docker compose up --build",
