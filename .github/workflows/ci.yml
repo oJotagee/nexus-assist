@@ -43,3 +43,20 @@ jobs:
 
       - name: Testes de interação (frontend)
         run: bun run test:interaction
+
+  deploy-frontend:
+    name: Deploy do frontend na Vercel
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar o deploy de produção
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            echo "::warning::Secret VERCEL_DEPLOY_HOOK_URL não configurado; deploy da Vercel ignorado."
+            exit 0
+          fi
+          curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL"

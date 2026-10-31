@@ -166,6 +166,8 @@ scripts/           setup.ts, dev.ts
 
 A cada push na `main` e em pull requests, o GitHub Actions (`.github/workflows/ci.yml`) roda lint, typecheck, os testes unitários e os de interação do frontend. Os testes de integração precisam de Postgres e rodam localmente (`bun run test:integration`).
 
+O deploy só acontece com o CI verde: na Vercel, o deploy automático da `main` fica desligado (`frontend/vercel.json`) e o CI dispara um Deploy Hook (secret `VERCEL_DEPLOY_HOOK_URL`) depois dos testes; no Railway, cada serviço usa a opção "Wait for CI".
+
 ## Comandos úteis
 
 ```bash
