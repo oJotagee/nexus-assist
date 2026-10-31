@@ -330,6 +330,9 @@ function traceData(
   };
 }
 
+/** Banco remoto (Railway) responde em dezenas de ms por comando; o padrão de 5 s do Prisma não basta. */
+const SEED_TRANSACTION = { maxWait: 20_000, timeout: 120_000 };
+
 async function main(): Promise<void> {
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -395,7 +398,7 @@ async function main(): Promise<void> {
           });
         }
       }
-    });
+    }, SEED_TRANSACTION);
 
     console.log(
       `Seed concluído: ${SEED_EMPLOYEES.length} funcionários, ${ARTICLES.length} artigos, ${CONVERSATIONS.length} conversas.`,

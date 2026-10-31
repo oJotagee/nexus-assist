@@ -301,6 +301,9 @@ const TICKETS: SeedTicket[] = [
 
 const SEQUENCES: Record<TicketType, number> = { INC: 20341, REQ: 10502 };
 
+/** Banco remoto (Railway) responde em dezenas de ms por comando; o padrão de 5 s do Prisma não basta. */
+const SEED_TRANSACTION = { maxWait: 20_000, timeout: 120_000 };
+
 async function main(): Promise<void> {
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -322,22 +325,20 @@ async function main(): Promise<void> {
         data: Object.entries(SEQUENCES).map(([type, next]) => ({ type: type as TicketType, next })),
       });
 
-      for (const { updates, ...ticket } of TICKETS) {
-        const lastUpdateAt = updates.at(-1)?.at ?? ticket.createdAt;
-
-        await tx.ticket.create({
-          data: {
-            ...ticket,
-            assigneeName: ticket.assigneeName ?? null,
-            resolvedAt: ticket.resolvedAt ?? null,
-            lastUpdateAt,
-            updates: {
-              create: updates.map(({ at, ...update }) => ({ ...update, createdAt: at })),
-            },
-          },
-        });
-      }
-    });
+      await tx.ticket.createMany({
+        data: TICKETS.map(({ updates, ...ticket }) => ({
+          ...ticket,
+          assigneeName: ticket.assigneeName ?? null,
+          resolvedAt: ticket.resolvedAt ?? null,
+          lastUpdateAt: updates.at(-1)?.at ?? ticket.createdAt,
+        })),
+      });
+      await tx.ticketUpdate.createMany({
+        data: TICKETS.flatMap(({ id, updates }) =>
+          updates.map(({ at, ...update }) => ({ ...update, ticketId: id, createdAt: at })),
+        ),
+      });
+    }, SEED_TRANSACTION);
 
     console.log(`Seed concluído: ${TICKETS.length} chamados.`);
   } finally {
